@@ -30,9 +30,17 @@ async def process_user_turn(
 
     log_step(conversation_id, "turn_start", user_chars=len(text))
 
-    state = await graph.ainvoke(update, config=_config(conversation_id))
+    # Use astream to capture per-node execution for pipeline visualization
+    nodes_visited: list[str] = []
+    state: dict = {}
+    async for event in graph.astream(update, config=_config(conversation_id)):
+        for node_name, node_output in event.items():
+            if node_name != "__end__":
+                nodes_visited.append(node_name)
+            if isinstance(node_output, dict):
+                state.update(node_output)
 
-    if not isinstance(state, dict):
+    if not state:
         return None
 
     evt = state.get("assistant_event") or {}
@@ -43,6 +51,7 @@ async def process_user_turn(
             "meta": evt.get("meta") or {},
             "selected_guideline": state.get("selected_guideline"),
             "extracted_variables": state.get("extracted_variables") or {},
+            "nodes_visited": nodes_visited,
             "status": "in_progress",
         }
 
@@ -56,6 +65,7 @@ async def process_user_turn(
             "selected_guideline": state.get("selected_guideline"),
             "extracted_variables": state.get("extracted_variables") or {},
             "pathway_walked": state.get("pathway_walked") or [],
+            "nodes_visited": nodes_visited,
             "status": "completed",
         }
 

@@ -312,19 +312,28 @@ guide-care/
 
 ## Testing
 
-### Backend Tests
+### Backend Tests (146 tests)
 
 ```bash
 cd backend
 pip install -r requirements.txt -r requirements-dev.txt
 
 cd src
-PYTHONPATH=. pytest -q ../tests
+PYTHONPATH=. pytest -v ../tests
 ```
 
 The backend test suite (`backend/tests/`) includes:
-- **test_patients.py** — Patient CRUD API tests
-- **test_pipeline_e2e.py** — End-to-end pipeline tests covering all 10 NICE guidelines (11 test cases)
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `test_guideline_engine.py` | 79 | All 19 pure functions: parse_bp, evaluate_condition, traverse_graph, format_recommendation, fix_variable_extraction, etc. |
+| `test_pipeline_e2e.py` | 35 | All 10 NICE guidelines (11 scenarios): graph traversal, recommendation content, no double periods |
+| `test_api.py` | 15 | HTTP endpoints: patients CRUD, CSV import, conversations, diagnoses export |
+| `test_orchestration.py` | 8 | LangGraph pipeline with mocked LLM: triage routing, clarification, variable extraction, full pipeline |
+| `test_crud.py` | 8 | Database CRUD: compute_age, patient/conversation/message operations |
+| `test_patients.py` | 1 | Legacy patient CRUD test |
+
+Tests use in-memory SQLite by default (no Docker needed). Set `TEST_DATABASE_URL` for PostgreSQL.
 
 ### Test Notebooks (Colab)
 
@@ -339,6 +348,22 @@ Three Colab notebooks in `testing/` validate the pipeline independently:
 **Test coverage:** variable extraction (30 cases), multi-turn clarification (10 cases), recommendation formatting (10 cases), error handling (10 cases).
 
 **Latest API results:** 10/10 pipeline success, 85% extraction accuracy, 96.2% overall score.
+
+## LangGraph Studio (Visual Pipeline Debugging)
+
+LangGraph Studio is the official browser-based IDE by LangChain for visualizing LangGraph state machines. It shows the 7-node pipeline graph with real-time execution flow.
+
+```bash
+cd backend
+pip install langgraph-cli
+
+langgraph dev
+# Opens browser at https://smith.langchain.com/studio/?baseUrl=http://localhost:2024
+```
+
+This shows the full pipeline graph: `load_patient -> triage -> clarify -> select_guideline -> extract_variables -> walk_graph -> format_output`. You can send messages and watch execution flow through nodes in real-time.
+
+The in-app pipeline viewer in the chat UI also shows which nodes were visited for each conversation turn.
 
 ## Environment Variables
 

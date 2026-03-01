@@ -71,9 +71,7 @@ async def get_conversation(db: AsyncSession, conv_id: UUID):
 
 
 async def append_message_to_conversation(db: AsyncSession, conv: Conversation, message: dict):
-    current = conv.messages or []
-    current.append(message)
-    conv.messages = current
+    conv.messages = (conv.messages or []) + [message]
     conv.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(conv)

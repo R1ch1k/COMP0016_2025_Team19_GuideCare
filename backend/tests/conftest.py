@@ -84,7 +84,7 @@ async def engine():
 
         def _coerce_uuid_before_flush(session, flush_context, instances):
             for obj in list(session.new) + list(session.dirty):
-                for attr in ("id", "patient_id"):
+                for attr in ("id", "patient_id", "conversation_id"):
                     val = getattr(obj, attr, None)
                     if isinstance(val, uuid.UUID):
                         setattr(obj, attr, str(val))
@@ -92,6 +92,28 @@ async def engine():
         # Install the listener on the ORM Session class so the sync session
         # used internally by AsyncSession will convert UUID objects to strings.
         event.listen(OrmSession, "before_flush", _coerce_uuid_before_flush)
+
+        # Coerce UUID bind parameters in SQL queries for SQLite compatibility.
+        # SQLAlchemy's UUID type converts to .hex (no hyphens), but we store
+        # hyphenated strings — so we re-format 32-char hex strings to 36-char.
+        import re
+        _hex_uuid_re = re.compile(r'^[0-9a-f]{32}$')
+
+        def _fix_param(v):
+            if isinstance(v, uuid.UUID):
+                return str(v)
+            if isinstance(v, str) and _hex_uuid_re.match(v):
+                return str(uuid.UUID(v))
+            return v
+
+        @event.listens_for(engine.sync_engine, "before_cursor_execute", retval=True)
+        def _coerce_uuid_params(conn, cursor, statement, parameters, context, executemany):
+            if parameters:
+                if isinstance(parameters, dict):
+                    parameters = {k: _fix_param(v) for k, v in parameters.items()}
+                elif isinstance(parameters, (list, tuple)):
+                    parameters = tuple(_fix_param(v) for v in parameters)
+            return statement, parameters
         # create tables once per test session using normalized metadata
         async with engine.begin() as conn:
             await conn.run_sync(lambda sync_conn: (normalize_metadata_for_sqlite(models.Base.metadata), models.Base.metadata.create_all(sync_conn)))
@@ -142,8 +164,31 @@ async def engine():
 
 @pytest.fixture
 async def db_session(engine):
-    AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    async with AsyncSessionLocal() as session:
+    _AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    async with _AsyncSessionLocal() as session:
         yield session
         # rollback any lingering transaction state between tests
         await session.rollback()
+
+
+@pytest.fixture
+async def async_client(engine):
+    """httpx AsyncClient wired to the FastAPI app with DB override."""
+    from httpx import AsyncClient, ASGITransport
+    from main import app
+    from app.db.session import get_async_session
+
+    _AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+    async def _override_session():
+        async with _AsyncSessionLocal() as session:
+            yield session
+
+    app.dependency_overrides[get_async_session] = _override_session
+
+    # Suppress the startup event (which tries to connect to real DB)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+    app.dependency_overrides.clear()

@@ -505,78 +505,88 @@ def run_scenario(scenario_id: str, scenario: Dict[str, Any]) -> PipelineResult:
     return result
 
 
-def main():
-    """Run all scenarios and print results."""
-    print("=" * 80)
-    print("GUIDE-CARE PIPELINE E2E TEST")
-    print("=" * 80)
+# ──────────────────────────────────────────────────────────────────
+# pytest-compatible parametrised tests
+# ──────────────────────────────────────────────────────────────────
 
-    # Load all guidelines
+import pytest
+
+
+SCENARIO_IDS = list(SCENARIOS.keys())
+
+
+@pytest.mark.parametrize("scenario_id", SCENARIO_IDS)
+def test_scenario_reaches_actions(scenario_id):
+    """Each scenario must reach at least one action node."""
+    result = run_scenario(scenario_id, SCENARIOS[scenario_id])
+    assert result.reached_actions, (
+        f"{scenario_id}: No action nodes reached. "
+        f"Missing vars: {result.missing_variables}. "
+        f"Path: {' -> '.join(result.traversal_path)}"
+    )
+
+
+@pytest.mark.parametrize("scenario_id", SCENARIO_IDS)
+def test_scenario_recommendation_contains_expected(scenario_id):
+    """Recommendation text must contain all must_contain strings."""
+    scenario = SCENARIOS[scenario_id]
+    result = run_scenario(scenario_id, scenario)
+    for expected in scenario.get("must_contain", []):
+        assert expected.lower() in result.recommendation.lower(), (
+            f"{scenario_id}: Recommendation missing '{expected}'. "
+            f"Got: {result.recommendation[:200]}"
+        )
+
+
+@pytest.mark.parametrize("scenario_id", SCENARIO_IDS)
+def test_scenario_recommendation_excludes_forbidden(scenario_id):
+    """Recommendation text must not contain any must_not_contain strings."""
+    scenario = SCENARIOS[scenario_id]
+    result = run_scenario(scenario_id, scenario)
+    for forbidden in scenario.get("must_not_contain", []):
+        assert forbidden.lower() not in result.recommendation.lower(), (
+            f"{scenario_id}: Recommendation contains forbidden '{forbidden}'. "
+            f"Got: {result.recommendation[:200]}"
+        )
+
+
+def test_all_guidelines_loaded():
+    """Verify all 10 guidelines load successfully."""
     all_data = load_all_guidelines()
-    print(f"\nLoaded {len(all_data)} guidelines: {', '.join(sorted(all_data.keys()))}")
+    assert len(all_data) >= 10, f"Expected >=10 guidelines, got {len(all_data)}"
 
-    results: List[PipelineResult] = []
-    passes = 0
-    failures = 0
 
+def test_no_double_periods_in_recommendations():
+    """No recommendation should contain '..' (double period)."""
     for scenario_id, scenario in SCENARIOS.items():
-        print(f"\n{'─' * 70}")
-        r = run_scenario(scenario_id, scenario)
-        results.append(r)
+        result = run_scenario(scenario_id, scenario)
+        if result.recommendation:
+            assert ".." not in result.recommendation, (
+                f"{scenario_id}: Double period in recommendation: "
+                f"{result.recommendation[:200]}"
+            )
 
+
+# ──────────────────────────────────────────────────────────────────
+# Standalone fallback — `python -m tests.test_pipeline_e2e`
+# ──────────────────────────────────────────────────────────────────
+
+
+def main():
+    """Run all scenarios and print results (standalone mode)."""
+    all_data = load_all_guidelines()
+    print(f"Loaded {len(all_data)} guidelines: {', '.join(sorted(all_data.keys()))}")
+
+    passes = failures = 0
+    for scenario_id, scenario in SCENARIOS.items():
+        r = run_scenario(scenario_id, scenario)
         if r.passed:
             passes += 1
         else:
             failures += 1
-
         print(r.summary())
 
-        # Print traversal path
-        if r.traversal_path:
-            print(f"  Path: {' -> '.join(r.traversal_path)}")
-
-        # Print variable count
-        non_null_vars = {k: v for k, v in r.variables.items() if v is not None}
-        print(f"  Variables ({len(non_null_vars)}): {json.dumps(non_null_vars, default=str)}")
-
-    # Summary
-    print("\n" + "=" * 80)
-    print("SUMMARY")
-    print("=" * 80)
-    print(f"Total scenarios: {len(results)}")
-    print(f"Passed: {passes}")
-    print(f"Failed: {failures}")
-
-    # Per-guideline breakdown
-    guidelines_tested = {}
-    for r in results:
-        gid = r.guideline_id
-        if gid not in guidelines_tested:
-            guidelines_tested[gid] = {"pass": 0, "fail": 0}
-        if r.passed:
-            guidelines_tested[gid]["pass"] += 1
-        else:
-            guidelines_tested[gid]["fail"] += 1
-
-    print("\nPer-guideline results:")
-    for gid in sorted(guidelines_tested):
-        stats = guidelines_tested[gid]
-        status = "OK" if stats["fail"] == 0 else "ISSUES"
-        print(f"  {gid}: {stats['pass']} pass, {stats['fail']} fail [{status}]")
-
-    # Print failures in detail
-    if failures > 0:
-        print("\n" + "=" * 80)
-        print("FAILURE DETAILS")
-        print("=" * 80)
-        for r in results:
-            if not r.passed:
-                print(f"\n{r.scenario_id} ({r.guideline_id}):")
-                for e in r.errors:
-                    print(f"  - {e}")
-                if r.recommendation:
-                    print(f"  Recommendation: {r.recommendation}")
-
+    print(f"\n{passes} passed, {failures} failed out of {passes + failures}")
     return 0 if failures == 0 else 1
 
 

@@ -1,0 +1,95 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+/**
+ * The 7 LangGraph pipeline nodes in execution order.
+ * Node names must match the keys in graph.py.
+ */
+const PIPELINE_NODES = [
+    { id: "load_patient", label: "Load Patient", description: "Fetch patient record from DB" },
+    { id: "triage", label: "Triage", description: "LLM urgency assessment + guideline selection" },
+    { id: "clarify", label: "Clarify", description: "Generate clarification questions if needed" },
+    { id: "select_guideline", label: "Select Guideline", description: "Choose NICE guideline" },
+    { id: "extract_variables", label: "Extract Variables", description: "LLM + regex variable extraction" },
+    { id: "walk_graph", label: "Walk Graph", description: "BFS traversal of decision tree" },
+    { id: "format_output", label: "Format Output", description: "Template-based recommendation" },
+];
+
+interface PipelineViewerProps {
+    nodesVisited: string[];
+    isProcessing?: boolean;
+}
+
+export default function PipelineViewer({ nodesVisited, isProcessing }: PipelineViewerProps) {
+    const [expanded, setExpanded] = useState(true);
+
+    const visitedSet = new Set(nodesVisited);
+    // Determine the currently active node (last visited while still processing)
+    const activeNode = isProcessing && nodesVisited.length > 0 ? nodesVisited[nodesVisited.length - 1] : null;
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+            >
+                <span className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Pipeline
+                    {nodesVisited.length > 0 && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded">
+                            {nodesVisited.length}/{PIPELINE_NODES.length}
+                        </span>
+                    )}
+                </span>
+                {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+
+            {expanded && (
+                <div className="px-3 pb-3 pt-1">
+                    <div className="space-y-0">
+                        {PIPELINE_NODES.map((node, i) => {
+                            const isVisited = visitedSet.has(node.id);
+                            const isActive = node.id === activeNode;
+                            const isLast = i === PIPELINE_NODES.length - 1;
+
+                            let dotColor = "bg-gray-300";
+                            let textColor = "text-gray-400";
+                            let lineColor = "bg-gray-200";
+
+                            if (isActive) {
+                                dotColor = "bg-blue-500 animate-pulse";
+                                textColor = "text-blue-700 font-semibold";
+                                lineColor = "bg-blue-300";
+                            } else if (isVisited) {
+                                dotColor = "bg-green-500";
+                                textColor = "text-gray-700";
+                                lineColor = "bg-green-300";
+                            }
+
+                            return (
+                                <div key={node.id} className="flex items-start gap-2">
+                                    {/* Vertical timeline */}
+                                    <div className="flex flex-col items-center w-3 flex-shrink-0 pt-[5px]">
+                                        <div className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0 transition-colors`} />
+                                        {!isLast && <div className={`w-px flex-1 min-h-[14px] ${lineColor} transition-colors`} />}
+                                    </div>
+                                    {/* Label */}
+                                    <div className="pb-1 min-w-0">
+                                        <span className={`text-[11px] leading-tight ${textColor} transition-colors`}>
+                                            {node.label}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

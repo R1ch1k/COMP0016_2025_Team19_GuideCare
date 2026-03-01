@@ -25,6 +25,7 @@ import { Response } from "@/components/ui/shadcn-io/ai/response";
 import { Loader } from "@/components/ui/shadcn-io/ai/loader";
 import { PlusIcon, Info, ChevronDown, ChevronUp, GitBranch } from "lucide-react";
 import RuleExplanationModal from "./RuleExplanationModal";
+import PipelineViewer from "./PipelineViewer";
 
 const BACKEND_WS_URL = process.env.NEXT_PUBLIC_BACKEND_WS_URL || "ws://localhost:8000";
 const BACKEND_HTTP_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -140,6 +141,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
     const [isExplanationOpen, setIsExplanationOpen] = useState(false);
     const [wsConnected, setWsConnected] = useState(false);
     const [backendPatientId, setBackendPatientId] = useState<string | null>(null);
+    const [nodesVisited, setNodesVisited] = useState<string[]>([]);
     const wsRef = useRef<WebSocket | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const initializedRef = useRef(false);
@@ -210,6 +212,11 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                 if (data.message && data.message.role === "assistant") {
                     const content = data.message.content || "";
                     const payload = data.payload || {};
+
+                    // Update pipeline visualization from nodes_visited
+                    if (payload.nodes_visited && Array.isArray(payload.nodes_visited)) {
+                        setNodesVisited(payload.nodes_visited);
+                    }
 
                     let displayContent = content;
 
@@ -380,6 +387,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
         setMessages([]);
         setInput("");
         setStreamingMessage("");
+        setNodesVisited([]);
         setSessionId(Date.now());
         initializedRef.current = false;
     };
@@ -607,17 +615,24 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
             <div className="border-t border-gray-200 px-4 sm:px-6 md:px-8 pt-6 pb-8 bg-white shadow-lg">
                 <div className="w-full mx-auto">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <span className={`inline-block w-2 h-2 rounded-full ${
-                                connectionStatus === "pipeline" ? "bg-green-500" :
-                                connectionStatus === "connecting" ? "bg-yellow-500 animate-pulse" :
-                                "bg-gray-400"
-                            }`} />
-                            <span className="text-xs text-gray-500">
-                                {connectionStatus === "pipeline" ? "LangGraph Pipeline" :
-                                 connectionStatus === "connecting" ? "Connecting..." :
-                                 "Direct Mode"}
-                            </span>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <span className={`inline-block w-2 h-2 rounded-full ${
+                                    connectionStatus === "pipeline" ? "bg-green-500" :
+                                    connectionStatus === "connecting" ? "bg-yellow-500 animate-pulse" :
+                                    "bg-gray-400"
+                                }`} />
+                                <span className="text-xs text-gray-500">
+                                    {connectionStatus === "pipeline" ? "LangGraph Pipeline" :
+                                     connectionStatus === "connecting" ? "Connecting..." :
+                                     "Direct Mode"}
+                                </span>
+                            </div>
+                            {connectionStatus === "pipeline" && (
+                                <div className="w-48">
+                                    <PipelineViewer nodesVisited={nodesVisited} isProcessing={isLoading} />
+                                </div>
+                            )}
                         </div>
                         <PromptInputButton
                             onClick={handleNewConversation}
