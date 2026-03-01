@@ -265,6 +265,7 @@ guide-care/
 │   └── api/parse-pdf/route.ts  # PDF guideline parser
 ├── components/
 │   ├── ChatPanel.tsx           # Main chat interface with WebSocket
+│   ├── PipelineViewer.tsx      # Real-time LangGraph node visualization
 │   ├── PatientInfoPanel.tsx    # Patient details sidebar
 │   ├── ConnectDataModal.tsx    # Data import modal (CSV/Excel upload)
 │   ├── SampleInputModal.tsx    # Sample inputs with multi-guideline examples
@@ -282,6 +283,7 @@ guide-care/
 │   │   └── evaluators/         # 10 evaluator JSON files
 │   ├── src/
 │   │   ├── main.py             # FastAPI app entry point
+│   │   ├── graph_export.py     # Graph export for LangGraph Studio
 │   │   └── app/
 │   │       ├── core/config.py  # Settings (DB, OpenAI, CORS)
 │   │       ├── db/
@@ -297,14 +299,23 @@ guide-care/
 │   │       │   ├── graph.py    # LangGraph state machine definition
 │   │       │   ├── state.py    # ConversationState TypedDict
 │   │       │   ├── deps.py     # Triage, clarify, extract, traverse, format
-│   │       │   └── runner.py   # process_user_turn() entry point
+│   │       │   └── runner.py   # process_user_turn() with astream visualization
 │   │       ├── schemas.py      # Pydantic request/response models
 │   │       ├── crud.py         # Database CRUD operations
 │   │       ├── seed.py         # Sample patient data seeder
 │   │       └── ws_manager.py   # WebSocket manager + diagnosis auto-persist
-│   ├── tests/                  # Backend unit + E2E tests
+│   ├── tests/                  # Backend test suite (146 tests)
+│   │   ├── conftest.py             # Fixtures: in-memory SQLite, async client
+│   │   ├── test_guideline_engine.py # 79 unit tests for engine functions
+│   │   ├── test_pipeline_e2e.py    # 35 E2E tests across all 10 guidelines
+│   │   ├── test_api.py            # 15 HTTP endpoint integration tests
+│   │   ├── test_orchestration.py  # 8 LangGraph pipeline tests (mocked LLM)
+│   │   ├── test_crud.py          # 8 database CRUD tests
+│   │   └── test_patients.py      # 1 legacy patient test
+│   ├── langgraph.json          # LangGraph Studio config
 │   ├── Dockerfile
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   └── .env.example
 ├── docker-compose.yml
 └── package.json
