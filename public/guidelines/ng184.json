@@ -8,29 +8,40 @@
     "IF a bite has not broken the skin, THEN do not offer antibiotics.",
     "IF a human bite has broken the skin but not drawn blood in a high-risk area or person at high risk, THEN consider antibiotics.",
     "IF a human bite has broken the skin and drawn blood, THEN offer antibiotics.",
-    "IF a cat bite has not broken the skin, THEN do not offer antibiotics.",
     "IF a cat bite has broken the skin but not drawn blood if the wound could be deep, THEN consider antibiotics.",
     "IF a cat bite has broken the skin and drawn blood, THEN offer antibiotics.",
-    "IF a dog or other traditional pet bite has not broken the skin, THEN do not offer antibiotics.",
-    "IF a dog or other traditional pet bite has broken the skin but not drawn blood, THEN do not offer antibiotics.",
     "IF a dog or other traditional pet bite has caused considerable, deep tissue damage or is visibly contaminated, THEN offer antibiotics.",
     "IF a dog or other traditional pet bite is in a high-risk area or person at high risk, THEN consider antibiotics.",
     "IF there are signs of a serious illness such as severe cellulitis, abscess, osteomyelitis, septic arthritis, necrotising fasciitis, or sepsis, THEN refer to hospital.",
-    "IF there is a penetrating wound involving bones, joints, tendons, or vascular structures, THEN refer to hospital.",
-    "IF a person is systemically unwell or has an infection after prophylactic antibiotics, THEN consider referral or seeking specialist advice.",
-    "IF a person cannot take or has an infection that is not responding to oral antibiotics, THEN consider referral or seeking specialist advice.",
-    "IF a bite wound does not start to improve within 24 to 48 hours of starting treatment, THEN reassess.",
-    "IF symptoms or signs of the infection develop or worsen rapidly at any time, THEN reassess.",
-    "IF a person becomes systemically unwell or there is severe pain disproportionate to the infection, THEN reassess.",
     "IF the type of bite is from a wild or exotic animal, THEN seek specialist advice from a microbiologist.",
-    "IF the type of bite is from a domestic animal unfamiliar to the practitioner, THEN consider seeking specialist advice.",
     "IF providing prophylaxis, THEN prescribe first-choice oral antibiotic Co-amoxiclav based on the age and infection severity.",
     "IF Co-amoxiclav is unsuitable due to penicillin allergy, THEN prescribe doxycycline and metronidazole, or seek specialist advice for alternative.",
     "IF prescribing for children under 1 month old, THEN seek specialist advice.",
     "IF prescribing for pregnancy with penicillin allergy or if co-amoxiclav is unsuitable, THEN seek specialist advice.",
-    "IF using intravenous antibiotics and a cephalosporin is inappropriate, THEN seek specialist advice."
+    "IF a person is systemically unwell or has an infection not responding to treatments, THEN consider referral.",
+    "IF a bite wound does not improve or worsens rapidly, THEN reassess."
   ],
   "nodes": [
+    {
+      "id": "n19",
+      "type": "condition",
+      "text": "Signs of a serious illness or penetrating wound"
+    },
+    {
+      "id": "n20",
+      "type": "action",
+      "text": "Refer to hospital"
+    },
+    {
+      "id": "n25",
+      "type": "condition",
+      "text": "Bite from a wild or exotic animal"
+    },
+    {
+      "id": "n26",
+      "type": "action",
+      "text": "Seek specialist advice from a microbiologist"
+    },
     {
       "id": "n1",
       "type": "condition",
@@ -82,26 +93,6 @@
       "text": "Offer antibiotics"
     },
     {
-      "id": "n11",
-      "type": "condition",
-      "text": "Dog or other traditional pet bite has not broken the skin"
-    },
-    {
-      "id": "n12",
-      "type": "action",
-      "text": "Do not offer antibiotics"
-    },
-    {
-      "id": "n13",
-      "type": "condition",
-      "text": "Dog or other traditional pet bite has broken the skin but not drawn blood"
-    },
-    {
-      "id": "n14",
-      "type": "action",
-      "text": "Do not offer antibiotics"
-    },
-    {
       "id": "n15",
       "type": "condition",
       "text": "Dog or other traditional pet bite has caused considerable, deep tissue damage or is visibly contaminated"
@@ -122,42 +113,27 @@
       "text": "Consider antibiotics"
     },
     {
-      "id": "n19",
-      "type": "condition",
-      "text": "Signs of a serious illness or penetrating wound"
-    },
-    {
-      "id": "n20",
+      "id": "n14",
       "type": "action",
-      "text": "Refer to hospital"
+      "text": "Do not offer antibiotics for minor dog or pet bite"
     },
     {
-      "id": "n21",
+      "id": "n31",
       "type": "condition",
-      "text": "Person is systemically unwell or has an infection not responding to treatments"
+      "text": "Prescribing for children under 1 month old"
     },
     {
-      "id": "n22",
+      "id": "n32",
       "type": "action",
-      "text": "Consider referral or seeking specialist advice"
+      "text": "Seek specialist advice"
     },
     {
-      "id": "n23",
+      "id": "n33",
       "type": "condition",
-      "text": "Bite wound does not improve or worsens rapidly"
+      "text": "Prescribing in pregnancy with penicillin allergy or co-amoxiclav unsuitable"
     },
     {
-      "id": "n24",
-      "type": "action",
-      "text": "Reassess"
-    },
-    {
-      "id": "n25",
-      "type": "condition",
-      "text": "Bite from a wild or exotic animal"
-    },
-    {
-      "id": "n26",
+      "id": "n34",
       "type": "action",
       "text": "Seek specialist advice"
     },
@@ -182,146 +158,61 @@
       "text": "Prescribe doxycycline with metronidazole or seek specialist advice for alternatives"
     },
     {
-      "id": "n31",
+      "id": "n21",
       "type": "condition",
-      "text": "Prescribing for children under 1 month old"
+      "text": "Person is systemically unwell or has an infection not responding to treatments"
     },
     {
-      "id": "n32",
+      "id": "n22",
       "type": "action",
-      "text": "Seek specialist advice"
+      "text": "Consider referral or seeking specialist advice"
     },
     {
-      "id": "n33",
+      "id": "n23",
       "type": "condition",
-      "text": "Prescribing in pregnancy with penicillin allergy or co-amoxiclav unsuitable"
+      "text": "Bite wound does not improve or worsens rapidly"
     },
     {
-      "id": "n34",
+      "id": "n24",
       "type": "action",
-      "text": "Seek specialist advice"
+      "text": "Reassess"
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n1",
-      "to": "n3",
-      "label": "no"
-    },
-    {
-      "from": "n3",
-      "to": "n4",
-      "label": "yes"
-    },
-    {
-      "from": "n3",
-      "to": "n5",
-      "label": "no"
-    },
-    {
-      "from": "n5",
-      "to": "n6",
-      "label": "yes"
-    },
-    {
-      "from": "n7",
-      "to": "n8",
-      "label": "yes"
-    },
-    {
-      "from": "n7",
-      "to": "n9",
-      "label": "no"
-    },
-    {
-      "from": "n9",
-      "to": "n10",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n12",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n13",
-      "label": "no"
-    },
-    {
-      "from": "n13",
-      "to": "n14",
-      "label": "yes"
-    },
-    {
-      "from": "n13",
-      "to": "n15",
-      "label": "no"
-    },
-    {
-      "from": "n15",
-      "to": "n16",
-      "label": "yes"
-    },
-    {
-      "from": "n15",
-      "to": "n17",
-      "label": "no"
-    },
-    {
-      "from": "n17",
-      "to": "n18",
-      "label": "yes"
-    },
-    {
-      "from": "n19",
-      "to": "n20",
-      "label": "yes"
-    },
-    {
-      "from": "n21",
-      "to": "n22",
-      "label": "yes"
-    },
-    {
-      "from": "n23",
-      "to": "n24",
-      "label": "yes"
-    },
-    {
-      "from": "n25",
-      "to": "n26",
-      "label": "yes"
-    },
-    {
-      "from": "n27",
-      "to": "n28",
-      "label": "yes"
-    },
-    {
-      "from": "n28",
-      "to": "n29",
-      "label": "no"
-    },
-    {
-      "from": "n29",
-      "to": "n30",
-      "label": "yes"
-    },
-    {
-      "from": "n31",
-      "to": "n32",
-      "label": "yes"
-    },
-    {
-      "from": "n33",
-      "to": "n34",
-      "label": "yes"
-    }
+    {"from": "n19", "to": "n20", "label": "yes"},
+    {"from": "n19", "to": "n25", "label": "no"},
+    {"from": "n25", "to": "n26", "label": "yes"},
+    {"from": "n25", "to": "n1", "label": "no"},
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n3", "label": "no"},
+    {"from": "n3", "to": "n4", "label": "yes"},
+    {"from": "n3", "to": "n5", "label": "no"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n5", "to": "n7", "label": "no"},
+    {"from": "n7", "to": "n8", "label": "yes"},
+    {"from": "n7", "to": "n9", "label": "no"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n15", "label": "no"},
+    {"from": "n15", "to": "n16", "label": "yes"},
+    {"from": "n15", "to": "n17", "label": "no"},
+    {"from": "n17", "to": "n18", "label": "yes"},
+    {"from": "n17", "to": "n14", "label": "no"},
+    {"from": "n4", "to": "n31", "label": "next"},
+    {"from": "n6", "to": "n31", "label": "next"},
+    {"from": "n8", "to": "n31", "label": "next"},
+    {"from": "n10", "to": "n31", "label": "next"},
+    {"from": "n16", "to": "n31", "label": "next"},
+    {"from": "n18", "to": "n31", "label": "next"},
+    {"from": "n31", "to": "n32", "label": "yes"},
+    {"from": "n31", "to": "n33", "label": "no"},
+    {"from": "n33", "to": "n34", "label": "yes"},
+    {"from": "n33", "to": "n27", "label": "no"},
+    {"from": "n27", "to": "n28", "label": "yes"},
+    {"from": "n28", "to": "n29", "label": "next"},
+    {"from": "n29", "to": "n30", "label": "yes"},
+    {"from": "n29", "to": "n21", "label": "no"},
+    {"from": "n21", "to": "n22", "label": "yes"},
+    {"from": "n21", "to": "n23", "label": "no"},
+    {"from": "n23", "to": "n24", "label": "yes"}
   ]
 }

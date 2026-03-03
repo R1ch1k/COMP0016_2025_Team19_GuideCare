@@ -84,66 +84,23 @@
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n2",
-      "to": "n3",
-      "label": "no"
-    },
-    {
-      "from": "n2",
-      "to": "n4",
-      "label": "yes"
-    },
-    {
-      "from": "n4",
-      "to": "n5",
-      "label": "yes"
-    },
-    {
-      "from": "n4",
-      "to": "n6",
-      "label": "no"
-    },
-    {
-      "from": "n7",
-      "to": "n8",
-      "label": "yes, psychological therapy"
-    },
-    {
-      "from": "n7",
-      "to": "n9",
-      "label": "yes, antidepressants"
-    },
-    {
-      "from": "n9",
-      "to": "n10",
-      "label": "if discontinuing"
-    },
-    {
-      "from": "n7",
-      "to": "n11",
-      "label": "yes, combination"
-    },
-    {
-      "from": "n11",
-      "to": "n12",
-      "label": "if discontinuing medication"
-    },
-    {
-      "from": "n5",
-      "to": "n13",
-      "label": "next"
-    },
-    {
-      "from": "n6",
-      "to": "n13",
-      "label": "next"
-    }
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n2", "to": "n3", "label": "no"},
+    {"from": "n2", "to": "n4", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "yes"},
+    {"from": "n4", "to": "n6", "label": "no"},
+    {"from": "n5", "to": "n7", "label": "next"},
+    {"from": "n6", "to": "n7", "label": "next"},
+    {"from": "n7", "to": "n8", "label": "yes, psychological therapy"},
+    {"from": "n7", "to": "n9", "label": "yes, antidepressants"},
+    {"from": "n7", "to": "n11", "label": "yes, combination"},
+    {"from": "n8", "to": "n13", "label": "next"},
+    {"from": "n9", "to": "n10", "label": "if discontinuing"},
+    {"from": "n9", "to": "n13", "label": "next"},
+    {"from": "n10", "to": "n13", "label": "next"},
+    {"from": "n11", "to": "n12", "label": "if discontinuing medication"},
+    {"from": "n11", "to": "n13", "label": "next"},
+    {"from": "n12", "to": "n13", "label": "next"}
   ],
   "condition_evaluators": {
     "n1": {
