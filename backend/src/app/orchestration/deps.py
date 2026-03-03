@@ -25,6 +25,7 @@ from app.guideline_engine import (
     get_var_description,
     format_recommendation_template,
     get_guideline,
+    get_all_variables_from_evaluator,
     get_missing_variables_for_next_step,
     load_all_guidelines,
     traverse_guideline_graph,
@@ -346,6 +347,7 @@ async def gpt_clarifier(
     patient_record: dict,
     triage: dict,
     answers: dict,
+    selected_guideline: str = "",
 ) -> Dict[str, Any]:
     """Generate clarification questions driven by the guideline evaluator.
 
@@ -357,8 +359,9 @@ async def gpt_clarifier(
     check if more variables are still needed (e.g. ABPM tolerated → now need
     the actual ABPM reading).
     """
-    # Use triage-suggested guideline first, fall back to keyword guess
-    guideline_id = (triage or {}).get("suggested_guideline", "")
+    # Use the already-selected guideline (set before clarify in the pipeline),
+    # then triage suggestion, then keyword guess as fallback
+    guideline_id = selected_guideline or (triage or {}).get("suggested_guideline", "")
     if not guideline_id or not get_guideline(guideline_id):
         s = (symptoms or "").lower()
         guideline_id = _guess_guideline(s)
@@ -400,98 +403,156 @@ async def gpt_clarifier(
         extracted["clinic_bp"] = vitals["last_bp"]
         extracted["bp"] = vitals["last_bp"]
 
-    # Incorporate clarification answers into extracted variables
+    # Incorporate clarification answers into extracted variables.
+    # Questions are tagged with "[var:variable_name]" so we know exactly
+    # which variable each answer maps to — no fragile keyword matching.
     import re as _re
     for q, a in (answers or {}).items():
-        q_lower = q.lower()
         a_str = str(a) if a else ""
         a_lower = a_str.lower()
 
+        # Extract target variable from tag (e.g. "[var:abpm_tolerated] Is ABPM tolerated?")
+        var_tag_match = _re.match(r"^\[var:(\w+)\]\s*", q)
+        target_var = var_tag_match.group(1) if var_tag_match else None
+        q_text = q[var_tag_match.end():] if var_tag_match else q
+        q_lower = q_text.lower()
+
+        # Detect "not known" / "unknown" — skip these entirely.
+        # "I don't know if they have diabetes" ≠ "they don't have diabetes".
+        _unknown_phrases = ("not known", "unknown", "unsure", "don't know", "no idea",
+                            "not sure", "not available", "n/a", "can't say", "not recorded")
+        is_unknown = any(phrase in a_lower for phrase in _unknown_phrases)
+
+        # Parse the answer value based on variable type
         bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a_str)
+        num_match = _re.search(r"(\d+\.?\d*)", a_str)
+        is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive", "present", "done", "tolerated", "completed", "accepted"))
+        is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "absent", "none", "declined", "refused"))
 
-        # ABPM-specific answers
-        if "abpm" in q_lower or "ambulatory" in q_lower:
-            if any(w in a_lower for w in ("yes", "done", "tolerated", "completed", "accepted")):
-                extracted["abpm_tolerated"] = True
-            elif any(w in a_lower for w in ("no", "not", "declined", "refused")):
-                extracted["abpm_tolerated"] = False
-            if bp_match:
-                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+        # If the answer is "unknown"/"not known", skip — don't set the variable
+        # at all. The tree will handle the missing variable via its default path.
+        # Exception: if the answer also contains a concrete value (BP reading, number),
+        # still extract that value.
+        if is_unknown and not bp_match and not num_match:
             continue
 
-        # ABPM reading / daytime average
-        if ("abpm" in q_lower or "ambulatory" in q_lower) and ("reading" in q_lower or "average" in q_lower or "result" in q_lower or "level" in q_lower):
-            if bp_match:
-                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
-            continue
+        if target_var:
+            # We know exactly which variable this answer is for
+            _bp_vars = {"clinic_bp", "abpm_daytime", "hbpm_average", "bp"}
+            _bool_vars_from_evaluator = set()  # Will be inferred from answer type
 
-        # Home BP / HBPM answers
-        if ("home" in q_lower or "hbpm" in q_lower) and ("bp" in q_lower or "blood pressure" in q_lower or "monitor" in q_lower):
-            if bp_match:
-                extracted["hbpm_average"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
-            continue
-
-        # Generic BP reading answers
-        if ("bp" in q_lower or "blood pressure" in q_lower) and bp_match:
-            reading = f"{bp_match.group(1)}/{bp_match.group(2)}"
-            if "abpm" in a_lower or "ambulatory" in a_lower:
-                extracted["abpm_daytime"] = reading
-            elif "home" in a_lower or "hbpm" in a_lower:
-                extracted["hbpm_average"] = reading
+            if target_var in _bp_vars and bp_match:
+                extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif target_var == "qrisk_10yr":
+                qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
+                if qrisk_num:
+                    extracted["qrisk_10yr"] = float(qrisk_num.group(1))
+                elif any(w in a_lower for w in ("less than 10", "below 10", "under 10", "low")):
+                    extracted["qrisk_10yr"] = 5
+                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10", "high")):
+                    extracted["qrisk_10yr"] = 15
+            elif target_var == "not_black_african_caribbean":
+                # Negated variable: "Is patient of African/Caribbean origin?"
+                # yes → not_black_african_caribbean = False
+                # no → not_black_african_caribbean = True
+                if is_yes:
+                    extracted["not_black_african_caribbean"] = False
+                elif is_no:
+                    extracted["not_black_african_caribbean"] = True
+            elif target_var == "abpm_tolerated":
+                if is_yes:
+                    extracted["abpm_tolerated"] = True
+                elif is_no:
+                    extracted["abpm_tolerated"] = False
+                # Also extract BP reading if included in the answer
+                if bp_match:
+                    extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif target_var == "target_bp_achieved":
+                # "Is BP at target?" — yes/no boolean
+                # But also accept a BP reading as evidence BP is NOT at target
+                if bp_match:
+                    reading = f"{bp_match.group(1)}/{bp_match.group(2)}"
+                    extracted["clinic_bp"] = reading
+                    # If they gave a reading, BP is likely not at target
+                    systolic = int(bp_match.group(1))
+                    extracted["target_bp_achieved"] = systolic < 140
+                elif is_yes:
+                    extracted["target_bp_achieved"] = True
+                elif is_no:
+                    extracted["target_bp_achieved"] = False
+            elif target_var in ("temperature", "fever"):
+                if num_match:
+                    val = float(num_match.group(1))
+                    extracted["temperature"] = val
+                    extracted["fever"] = val >= 38.0
+                elif is_yes:
+                    extracted["fever"] = True
+                elif is_no:
+                    extracted["fever"] = False
+            elif target_var in ("gcs_score",) and num_match:
+                extracted["gcs_score"] = int(float(num_match.group(1)))
+            elif target_var in ("iop", "intraocular_pressure") and num_match:
+                val = int(float(num_match.group(1)))
+                extracted["iop"] = val
+                extracted["intraocular_pressure"] = val
+            elif target_var in ("duration", "vomiting_count", "gestational_age") and num_match:
+                extracted[target_var] = int(float(num_match.group(1)))
+            elif target_var in ("centor_score", "feverpain_score") and num_match:
+                extracted[target_var] = int(float(num_match.group(1)))
+            elif bp_match:
+                # Variable expects a BP reading
+                extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif is_yes or is_no:
+                # Generic boolean — handle negated variable names
+                if target_var.startswith("not_") or target_var.startswith("no_"):
+                    extracted[target_var] = is_no
+                else:
+                    extracted[target_var] = is_yes
+            elif num_match:
+                # Generic numeric
+                extracted[target_var] = float(num_match.group(1))
             else:
-                extracted.setdefault("clinic_bp", reading)
-            continue
-
-        # Ethnicity / African-Caribbean origin — handle negated variable
-        # "not_black_african_caribbean" = True when patient is NOT of that origin
-        # So if question asks "Is the patient of black African/Caribbean origin?"
-        # and user says "no" → not_black_african_caribbean = True
-        if any(w in q_lower for w in ("african", "caribbean", "ethnicity", "black")):
-            is_yes_eth = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
-            is_no_eth = any(w in a_lower for w in ("no", "false", "negative", "denied", "not"))
-            if is_yes_eth:
-                # Patient IS of black African/Caribbean origin
-                extracted["not_black_african_caribbean"] = False
-            elif is_no_eth:
-                # Patient is NOT of black African/Caribbean origin
-                extracted["not_black_african_caribbean"] = True
-            continue
-
-        # Generic boolean yes/no answers — map to variable by keyword matching
-        is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive", "present"))
-        is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "absent", "none"))
-        if is_yes or is_no:
-            # Try to match question keywords to known variable names
-            for var_name in list(VAR_DESCRIPTIONS.keys()):
-                var_words = var_name.lower().replace("_", " ").split()
-                if any(w in q_lower for w in var_words if len(w) > 3):
-                    if var_name not in extracted:
-                        # Handle negated variable names (not_X = opposite of answer)
+                # Free-text answer (e.g. "not known") — store as string
+                extracted[target_var] = a_str
+        else:
+            # Legacy: untagged questions — fall back to keyword matching
+            if bp_match and ("bp" in q_lower or "blood pressure" in q_lower):
+                reading = f"{bp_match.group(1)}/{bp_match.group(2)}"
+                if "abpm" in q_lower or "ambulatory" in q_lower:
+                    extracted["abpm_daytime"] = reading
+                elif "home" in q_lower or "hbpm" in q_lower:
+                    extracted["hbpm_average"] = reading
+                else:
+                    extracted["clinic_bp"] = reading
+            elif is_yes or is_no:
+                for var_name in list(VAR_DESCRIPTIONS.keys()):
+                    var_words = var_name.lower().replace("_", " ").split()
+                    if any(w in q_lower for w in var_words if len(w) > 3):
                         if var_name.startswith("not_") or var_name.startswith("no_"):
                             extracted[var_name] = is_no
                         else:
                             extracted[var_name] = is_yes
-                    break
-
-        # Numeric answers (e.g. temperature, GCS score, IOP)
-        num_match = _re.search(r"(\d+\.?\d*)", a_str)
-        if num_match:
-            val = float(num_match.group(1))
-            if "temperature" in q_lower or "fever" in q_lower:
-                extracted.setdefault("fever", val >= 38.0)
-                extracted.setdefault("temperature", val)
-            elif "gcs" in q_lower or "glasgow" in q_lower:
-                extracted.setdefault("gcs_score", int(val))
-            elif "iop" in q_lower or "intraocular" in q_lower:
-                extracted.setdefault("iop", int(val))
-                extracted.setdefault("intraocular_pressure", int(val))
+                        break
 
     # Merge extracted into known_vars (extracted values override)
     for k, v in extracted.items():
         if v is not None:
             known_vars[k] = v
 
-    # Check what's still missing after extraction
+    # Infer target_bp_achieved from clinic_bp if we have a reading but
+    # haven't determined if BP is at target yet. This avoids asking the
+    # clinician "Is BP at target?" when we already know it's 160/100.
+    if "target_bp_achieved" not in known_vars and "clinic_bp" in known_vars:
+        from app.guideline_engine import parse_bp
+        bp = parse_bp(known_vars["clinic_bp"])
+        if bp:
+            age = known_vars.get("age", 0)
+            target_sys = 150 if (isinstance(age, (int, float)) and age >= 80) else 140
+            known_vars["target_bp_achieved"] = bp[0] < target_sys and bp[1] < 90
+
+    # Check what's still missing to advance to the next step in the tree.
+    # This only asks about variables needed at the current decision point,
+    # avoiding useless questions about branches the patient won't reach.
     nodes = g_data["guideline"]["nodes"]
     edges = g_data["guideline"]["edges"]
     evaluator = g_data["merged_evaluator"]
@@ -555,9 +616,12 @@ async def gpt_clarifier(
         "target_bp_achieved": "whether the patient's blood pressure is at target on current treatment",
     }
 
-    # Generate questions for up to 2 missing variables
+    # Generate questions for missing variables.
+    # Each question is tagged with the target variable name using a
+    # "[var:variable_name]" prefix so the answer can be mapped back
+    # to the correct variable without fragile keyword matching.
     questions: List[str] = []
-    for target_var in missing[:2]:
+    for target_var in missing:
         desc = var_desc.get(target_var, target_var)
         try:
             prompt = f"""You are a medical assistant collecting clinical information from a doctor for NICE guideline {guideline_id}.
@@ -578,10 +642,11 @@ Example good questions:
 
             raw = await generate(prompt, max_tokens=100, temperature=0.1)
             question = extract_best_question(raw)
-            questions.append(question)
+            # Tag with target variable so answer parsing knows what to set
+            questions.append(f"[var:{target_var}] {question}")
         except Exception as e:
             logger.warning("Failed to generate clarification question: %s", e)
-            questions.append(f"What is the patient's {desc}?")
+            questions.append(f"[var:{target_var}] What is the patient's {desc}?")
 
     return {"done": False, "questions": questions}
 
@@ -801,13 +866,15 @@ JSON:
         if has_hypertension:
             extracted.setdefault("hypertension_history", True)
     else:
-        # No conditions on record — default comorbidities to False
+        # No conditions on record — OVERRIDE LLM values to False.
+        # The LLM may hallucinate comorbidities from symptom text.
+        # With no conditions in the patient record, they are definitively False.
         if "diabetes" in all_vars:
-            extracted.setdefault("diabetes", False)
+            extracted["diabetes"] = False
         if "cardiovascular_disease" in all_vars:
-            extracted.setdefault("cardiovascular_disease", False)
+            extracted["cardiovascular_disease"] = False
         if "renal_disease" in all_vars:
-            extracted.setdefault("renal_disease", False)
+            extracted["renal_disease"] = False
 
     if patient.get("recent_vitals", {}).get("last_bp") and "clinic_bp" not in extracted:
         extracted["clinic_bp"] = patient["recent_vitals"]["last_bp"]
@@ -921,9 +988,29 @@ JSON:
         if var in extracted and not extracted[var]:
             del extracted[var]
 
-    # For patients ON BP treatment whose BP is above target, explicitly set target_bp_achieved=False
+    # Variables that represent clinical actions/procedures — the LLM must NOT
+    # guess these because they depend on what the clinician actually did.
+    # Only set them from clarification answers (handled below).
+    _clinician_action_vars = {
+        "abpm_tolerated", "abpm_daytime", "hbpm_average",  # NG136 — diagnostic procedures
+        "abpm_accepted", "abpm_done",  # aliases (mapped above but just in case)
+    }
+    clarification_var_names = set()
+    import re as _re_pre
+    for q in (clarifications or {}).keys():
+        m = _re_pre.match(r"^\[var:(\w+)\]", q)
+        if m:
+            clarification_var_names.add(m.group(1))
+    for var in _clinician_action_vars:
+        if var in extracted and var not in clarification_var_names:
+            del extracted[var]
+
+    # Infer target_bp_achieved from clinic_bp if we have a reading AND the
+    # patient is already on BP treatment.  For newly-diagnosed patients who
+    # aren't on any antihypertensive yet, we must NOT set this variable —
+    # otherwise the decision tree cascades through every treatment step
+    # (Step 1→2→3→4) instead of stopping at "offer treatment" (Step 1).
     if on_bp_treatment and "target_bp_achieved" in all_vars and "target_bp_achieved" not in extracted:
-        # Check if BP is still above target (140/90 for < 80, 150/90 for >= 80)
         bp_str = extracted.get("clinic_bp", "")
         if bp_str:
             from app.guideline_engine import parse_bp
@@ -931,63 +1018,95 @@ JSON:
             if bp:
                 age = extracted.get("age", 0)
                 target_sys = 150 if (isinstance(age, (int, float)) and age >= 80) else 140
-                if bp[0] >= target_sys or bp[1] >= 90:
-                    extracted["target_bp_achieved"] = False
+                extracted["target_bp_achieved"] = bp[0] < target_sys and bp[1] < 90
 
-    # Merge in clarification answers — map answer text to correct variable names
+    # Merge in clarification answers — use [var:...] tag to map answers
+    # to the correct variable without fragile keyword matching.
     import re as _re
     for q, a in (clarifications or {}).items():
-        q_lower = q.lower()
-        a_lower = (a or "").lower()
+        a_str = str(a) if a else ""
+        a_lower = a_str.lower()
 
-        # Check for ABPM-related answers
-        if "abpm" in q_lower or "ambulatory" in q_lower:
-            if "abpm_tolerated" not in extracted or not extracted["abpm_tolerated"]:
-                if any(w in a_lower for w in ("yes", "done", "tolerated", "completed")):
+        # Extract target variable from tag
+        var_tag_match = _re.match(r"^\[var:(\w+)\]\s*", q)
+        target_var = var_tag_match.group(1) if var_tag_match else None
+        q_text = q[var_tag_match.end():] if var_tag_match else q
+        q_lower = q_text.lower()
+
+        # Detect "not known" / "unknown" — skip these entirely.
+        _unknown_phrases = ("not known", "unknown", "unsure", "don't know", "no idea",
+                            "not sure", "not available", "n/a", "can't say", "not recorded")
+        is_unknown = any(phrase in a_lower for phrase in _unknown_phrases)
+
+        bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a_str)
+        num_match = _re.search(r"(\d+\.?\d*)", a_str)
+        is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive", "done", "tolerated", "completed"))
+        is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "absent", "none", "declined", "refused"))
+
+        # Skip "unknown" answers — don't set the variable at all
+        if is_unknown and not bp_match and not num_match:
+            continue
+
+        if target_var:
+            # Direct variable mapping from tag
+            _bp_vars = {"clinic_bp", "abpm_daytime", "hbpm_average", "bp"}
+            if target_var in _bp_vars and bp_match:
+                extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif target_var == "qrisk_10yr":
+                qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
+                if qrisk_num:
+                    extracted["qrisk_10yr"] = float(qrisk_num.group(1))
+                elif any(w in a_lower for w in ("less than 10", "below 10", "under 10", "low")):
+                    extracted["qrisk_10yr"] = 5
+                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10", "high")):
+                    extracted["qrisk_10yr"] = 15
+            elif target_var == "not_black_african_caribbean":
+                if is_yes:
+                    extracted["not_black_african_caribbean"] = False
+                elif is_no:
+                    extracted["not_black_african_caribbean"] = True
+            elif target_var == "abpm_tolerated":
+                if is_yes:
                     extracted["abpm_tolerated"] = True
-                    bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
-                    if bp_match and "abpm_daytime" not in extracted:
-                        extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
-                elif any(w in a_lower for w in ("no", "not", "declined", "refused")):
+                elif is_no:
                     extracted["abpm_tolerated"] = False
-            # Also check for BP reading in the answer even if tolerated already set
-            bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
-            if bp_match and "abpm_daytime" not in extracted:
-                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
-            continue
-
-        # Ethnicity / African-Caribbean answers — handle negated variable
-        if any(w in q_lower for w in ("african", "caribbean", "ethnicity", "black")):
-            is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
-            is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "not"))
-            if is_yes:
-                extracted["not_black_african_caribbean"] = False
-            elif is_no:
-                extracted["not_black_african_caribbean"] = True
-            continue
-
-        # HBPM answers
-        if ("home" in q_lower or "hbpm" in q_lower) and ("bp" in q_lower or "blood pressure" in q_lower or "monitor" in q_lower):
-            bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
-            if bp_match:
-                extracted["hbpm_average"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
-            continue
-
-        for var_name in all_vars:
-            var_words = var_name.lower().replace("_", " ").split()
-            if any(w in q_lower for w in var_words if len(w) > 3):
-                if var_name not in extracted:
-                    # Parse boolean answers properly
-                    is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
-                    is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "none"))
-                    if is_yes or is_no:
-                        if var_name.startswith("not_") or var_name.startswith("no_"):
-                            extracted[var_name] = is_no
+                if bp_match and "abpm_daytime" not in extracted:
+                    extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif target_var == "target_bp_achieved":
+                if bp_match:
+                    reading = f"{bp_match.group(1)}/{bp_match.group(2)}"
+                    extracted["clinic_bp"] = reading
+                    systolic = int(bp_match.group(1))
+                    extracted["target_bp_achieved"] = systolic < 140
+                elif is_yes:
+                    extracted["target_bp_achieved"] = True
+                elif is_no:
+                    extracted["target_bp_achieved"] = False
+            elif bp_match:
+                extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            elif is_yes or is_no:
+                if target_var.startswith("not_") or target_var.startswith("no_"):
+                    extracted[target_var] = is_no
+                else:
+                    extracted[target_var] = is_yes
+            elif num_match:
+                extracted[target_var] = float(num_match.group(1))
+            else:
+                extracted[target_var] = a_str
+        else:
+            # Legacy: untagged questions — fall back to keyword matching
+            for var_name in all_vars:
+                var_words = var_name.lower().replace("_", " ").split()
+                if any(w in q_lower for w in var_words if len(w) > 3):
+                    if var_name not in extracted:
+                        if is_yes or is_no:
+                            if var_name.startswith("not_") or var_name.startswith("no_"):
+                                extracted[var_name] = is_no
+                            else:
+                                extracted[var_name] = is_yes
                         else:
-                            extracted[var_name] = is_yes
-                    else:
-                        extracted[var_name] = a
-                break
+                            extracted[var_name] = a_str
+                    break
 
     logger.info("Final extracted variables: %s", {k: v for k, v in extracted.items() if v is not None})
     return extracted

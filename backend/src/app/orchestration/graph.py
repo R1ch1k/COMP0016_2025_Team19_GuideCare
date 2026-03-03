@@ -73,28 +73,30 @@ def build_graph(deps):
     async def clarify(state: ConversationState) -> dict:
         """
         WebSocket-friendly clarification loop (no interrupt()):
-        - ask one question -> END
-        - next user turn provides answer -> continue
-        - after all pre-generated questions answered, re-check for more missing vars
-        - max 3 rounds of clarification to prevent infinite loops
+        - ask one question -> END (wait for user answer)
+        - next user turn provides answer -> ask next pending question
+        - after all questions answered, re-check for more missing vars
+        - no artificial round cap — keeps going until the tree can advance
         """
         cid = state.get("conversation_id", "unknown")
         history_window = (state.get("conversation_history") or [])[-settings.MODEL_HISTORY_MAX_MESSAGES :]
         pending = list(state.get("clarification_questions") or [])
         answers = dict(state.get("clarification_answers") or {})
         awaiting = bool(state.get("awaiting_clarification_answer", False))
-        rounds = state.get("clarification_rounds", 0)
 
         # Ask next question and stop the graph
         if pending and not awaiting:
             q = pending[0]
-            log_step(cid, "clarify_ask", question=q)
+            # Strip [var:...] tag for display — keep it in state for answer parsing
+            import re as _re
+            display_q = _re.sub(r"^\[var:\w+\]\s*", "", q)
+            log_step(cid, "clarify_ask", question=display_q)
             return {
                 "awaiting_clarification_answer": True,
                 "assistant_event": {
                     "type": "clarification_question",
-                    "content": q,
-                    "meta": {"question": q},
+                    "content": display_q,
+                    "meta": {"question": q},  # keep tagged version in meta
                 },
             }
 
@@ -121,20 +123,8 @@ def build_graph(deps):
             # whether more variables are still missing (e.g. user said "yes ABPM
             # was done" but didn't provide the actual BP reading).
 
-        # Limit clarification rounds to prevent infinite loops
-        if rounds >= 3:
-            log_step(cid, "clarify_done", needed=False, reason="max_rounds")
-            return {
-                "clarification_needed": False,
-                "clarification_questions": [],
-                "clarification_answers": answers,
-                "awaiting_clarification_answer": False,
-                "clarification_rounds": rounds,
-                "assistant_event": {},
-            }
-
         # Generate (or re-generate) clarification questions based on what's
-        # still missing after incorporating previous answers
+        # still missing after incorporating previous answers.
         log_step(cid, "clarify_generate_start")
         result = await with_retry_timeout(
             deps["gpt_clarifier"],
@@ -143,11 +133,12 @@ def build_graph(deps):
             state.get("patient_record", {}),
             state.get("triage_result", {}),
             answers,
+            state.get("selected_guideline", ""),
             timeout=settings.AI_TIMEOUT_SECONDS,
             retries=settings.AI_RETRIES,
         )
 
-        questions = (result.get("questions") or [])[:3]
+        questions = result.get("questions") or []
         if result.get("done") or not questions:
             log_step(cid, "clarify_done", needed=False)
             return {
@@ -155,7 +146,6 @@ def build_graph(deps):
                 "clarification_questions": [],
                 "clarification_answers": answers,
                 "awaiting_clarification_answer": False,
-                "clarification_rounds": rounds + 1,
                 "assistant_event": {},
             }
 
@@ -165,7 +155,6 @@ def build_graph(deps):
             "clarification_questions": questions,
             "clarification_answers": answers,
             "awaiting_clarification_answer": False,
-            "clarification_rounds": rounds + 1,
             "assistant_event": {},
         }
 
@@ -281,7 +270,7 @@ def build_graph(deps):
     # ---- conditional routers ----
 
     def after_triage(state: ConversationState) -> str:
-        return "format_output" if state.get("urgent_escalation") else "clarify"
+        return "format_output" if state.get("urgent_escalation") else "select_guideline"
 
     def after_clarify(state: ConversationState) -> str:
         # If a question was emitted, stop and wait for next user message
@@ -289,7 +278,7 @@ def build_graph(deps):
             return "end"
         if state.get("clarification_needed"):
             return "clarify"
-        return "select_guideline"
+        return "extract_variables"
 
     # ---- build graph ----
 
@@ -297,21 +286,21 @@ def build_graph(deps):
 
     sg.add_node("load_patient", load_patient)
     sg.add_node("triage", triage)
-    sg.add_node("clarify", clarify)
     sg.add_node("select_guideline", select_guideline)
+    sg.add_node("clarify", clarify)
     sg.add_node("extract_variables", extract_variables)
     sg.add_node("walk_graph", walk_graph)
     sg.add_node("format_output", format_output)
 
     sg.set_entry_point("load_patient")
     sg.add_edge("load_patient", "triage")
-    sg.add_conditional_edges("triage", after_triage, {"clarify": "clarify", "format_output": "format_output"})
+    sg.add_conditional_edges("triage", after_triage, {"select_guideline": "select_guideline", "format_output": "format_output"})
+    sg.add_edge("select_guideline", "clarify")
     sg.add_conditional_edges(
         "clarify",
         after_clarify,
-        {"clarify": "clarify", "select_guideline": "select_guideline", "end": END},
+        {"clarify": "clarify", "extract_variables": "extract_variables", "end": END},
     )
-    sg.add_edge("select_guideline", "extract_variables")
     sg.add_edge("extract_variables", "walk_graph")
     sg.add_edge("walk_graph", "format_output")
     sg.add_edge("format_output", END)

@@ -25,7 +25,8 @@ class ConversationState(TypedDict, total=False):
     clarification_questions: List[str]
     clarification_answers: Dict[str, Any]
     awaiting_clarification_answer: bool
-    clarification_rounds: int
+    clarification_rounds: int  # deprecated, kept for backwards compat
+    clarification_total_asked: int
 
     # guideline processing
     selected_guideline: str

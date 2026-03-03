@@ -57,7 +57,7 @@ def _mock_deps(
     async def mock_triage(symptoms, history, patient_record):
         return triage_response or default_triage
 
-    async def mock_clarify(symptoms, history, patient, triage, answers):
+    async def mock_clarify(symptoms, history, patient, triage, answers, selected_guideline=""):
         return clarify_response or default_clarify
 
     async def mock_select(symptoms, triage, answers, patient):
@@ -119,7 +119,7 @@ class TestTriageRouting:
 
     @pytest.mark.asyncio
     async def test_moderate_goes_through_full_pipeline(self):
-        """Moderate urgency should go through clarify -> select -> extract -> walk -> format."""
+        """Moderate urgency should go through select -> clarify -> extract -> walk -> format."""
         deps = _mock_deps()
         graph = build_graph(deps)
 
@@ -171,7 +171,7 @@ class TestClarification:
         guideline selection."""
         # Stateful mock: returns questions on first call, done on second (after answers)
         call_count = {"n": 0}
-        async def _stateful_clarify(symptoms, history, patient, triage, answers):
+        async def _stateful_clarify(symptoms, history, patient, triage, answers, selected_guideline=""):
             call_count["n"] += 1
             if not answers:
                 return {"done": False, "questions": ["What is the FeverPAIN score?"]}
@@ -217,7 +217,7 @@ class TestClarification:
         """After answering the first question, if the clarifier finds more
         missing variables, it should ask another question (multi-round)."""
         round_num = {"n": 0}
-        async def _multi_round_clarify(symptoms, history, patient, triage, answers):
+        async def _multi_round_clarify(symptoms, history, patient, triage, answers, selected_guideline=""):
             round_num["n"] += 1
             if not answers:
                 return {"done": False, "questions": ["Is ABPM tolerated?"]}
