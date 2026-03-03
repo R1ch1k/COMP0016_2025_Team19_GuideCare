@@ -34,34 +34,15 @@
     ]
   },
   "n4": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "loss_of_consciousness"
-      },
-      {
-        "variable": "amnesia_since_injury"
-      }
-    ]
+    "variable": "suspicion_c_spine_injury"
   },
   "n5": {
-    "type": "or",
-    "conditions": [
-      {
-        "type": "age_compare",
-        "variable": "age",
-        "threshold": 65,
-        "op": ">="
-      },
-      {
-        "variable": "clotting_disorder_present"
-      }
-    ]
+    "variable": "predisposing_condition"
+  },
+  "n6": {
+    "variable": "low_risk_factors_present"
   },
   "n8": {
-    "variable": "suspicion_cervical_spine_injury"
-  },
-  "n10": {
     "type": "and",
     "conditions": [
       {
@@ -75,59 +56,7 @@
       }
     ]
   },
-  "n11": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "suspicion_non_accidental_injury"
-      },
-      {
-        "and": [
-          {
-            "variable": "seizure_present"
-          },
-          {
-            "variable": "no_epilepsy_history"
-          }
-        ]
-      },
-      {
-        "type": "numeric_compare",
-        "variable": "gcs_score",
-        "threshold": 15,
-        "op": "<"
-      }
-    ]
-  },
-  "n13": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "consciousness_assessment_needed"
-      },
-      {
-        "variable": "drowsiness_present"
-      },
-      {
-        "variable": "persistent_vomiting"
-      }
-    ]
-  },
-  "n14": {
-    "type": "and",
-    "conditions": [
-      {
-        "type": "age_compare",
-        "variable": "age",
-        "threshold": 16,
-        "op": "<"
-      },
-      {
-        "variable": "suspected_cervical_spine_injury"
-      }
-    ]
-  },
-  "n15": {
+  "n9": {
     "type": "or",
     "conditions": [
       {
@@ -141,6 +70,54 @@
       },
       {
         "variable": "urgent_diagnosis_needed"
+      },
+      {
+        "variable": "focal_neurological_signs"
+      }
+    ]
+  },
+  "n11": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "suspicion_non_accidental_injury"
+      },
+      {
+        "variable": "dangerous_mechanism"
+      },
+      {
+        "variable": "predisposing_condition"
+      }
+    ]
+  },
+  "n15": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "loss_of_consciousness"
+      },
+      {
+        "variable": "amnesia_since_injury"
+      }
+    ]
+  },
+  "n16": {
+    "type": "or",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 65,
+        "op": ">="
+      },
+      {
+        "variable": "clotting_disorder_present"
+      },
+      {
+        "variable": "dangerous_mechanism"
+      },
+      {
+        "variable": "prolonged_amnesia"
       }
     ]
   }

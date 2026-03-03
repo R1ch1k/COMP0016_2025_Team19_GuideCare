@@ -1,74 +1,58 @@
 {
+  "n19": {
+    "variable": "signs_serious_illness_or_penetrating_wound"
+  },
+  "n25": {
+    "variable": "wild_or_exotic_animal_bite"
+  },
   "n1": {
     "variable": "bite_not_broken_skin"
   },
   "n3": {
-    "variable": "bite_broken_skin_not_drawn_blood"
+    "variable": "human_bite_broken_skin_not_drawn_blood"
   },
-  "n4": {
-    "variable": "bite_high_risk_area_or_person_high_risk"
+  "n5": {
+    "variable": "human_bite_broken_skin_drawn_blood"
   },
-  "n6": {
-    "variable": "bite_broken_skin_drawn_blood"
-  },
-  "n8": {
-    "variable": "cat_bite_not_broken_skin"
-  },
-  "n10": {
+  "n7": {
     "variable": "cat_bite_broken_skin_not_drawn_blood"
   },
-  "n11": {
-    "variable": "wound_could_be_deep"
-  },
-  "n13": {
+  "n9": {
     "variable": "cat_bite_broken_skin_drawn_blood"
   },
   "n15": {
-    "variable": "dog_or_other_pet_bite_not_broken_skin"
+    "variable": "dog_bite_severe_tissue_damage_or_contamination"
   },
   "n17": {
-    "variable": "dog_or_other_pet_bite_broken_skin_not_drawn_blood"
-  },
-  "n19": {
-    "variable": "dog_or_other_pet_bite_broken_skin_drawn_blood"
-  },
-  "n20": {
-    "variable": "considerable_deep_tissue_damage_or_contamination"
-  },
-  "n22": {
-    "variable": "bite_high_risk_area_or_person_high_risk"
-  },
-  "n23": {
-    "variable": "signs_serious_illness_or_penetrating_wound"
-  },
-  "n25": {
-    "variable": "systemically_unwell_or_cannot_take_oral_antibiotics"
-  },
-  "n27": {
-    "variable": "penicillin_allergy_or_unable_to_take_oral_antibiotics"
-  },
-  "n29": {
-    "variable": "unable_to_take_oral_antibiotics_or_severely_unwell"
+    "variable": "dog_bite_high_risk_area_or_person"
   },
   "n31": {
-    "variable": "penicillin_allergy_and_unable_to_take_oral_antibiotics"
+    "type": "age_compare",
+    "variable": "age",
+    "threshold": 0.083,
+    "op": "<"
   },
   "n33": {
-    "variable": "treating_children_1_month_or_older"
+    "type": "and",
+    "conditions": [
+      {
+        "variable": "pregnant"
+      },
+      {
+        "variable": "penicillin_allergy"
+      }
+    ]
   },
-  "n35": {
-    "variable": "penicillin_allergy_in_children"
+  "n27": {
+    "variable": "prophylaxis_required"
   },
-  "n37": {
-    "variable": "bite_on_sensitive_areas"
+  "n29": {
+    "variable": "penicillin_allergy"
   },
-  "n38": {
-    "variable": "person_with_comorbidities"
+  "n21": {
+    "variable": "systemically_unwell_or_infection_not_responding"
   },
-  "n39": {
-    "variable": "five_day_antibiotic_course_used"
-  },
-  "n40": {
-    "variable": "significant_tissue_destruction_or_penetration"
+  "n23": {
+    "variable": "wound_not_improving_or_worsening"
   }
 }

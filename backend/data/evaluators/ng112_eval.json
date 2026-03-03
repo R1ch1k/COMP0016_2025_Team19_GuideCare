@@ -1,59 +1,56 @@
 {
   "n1": {
-    "variable": "recurrent_lower_uti_unknown_cause"
-  },
-  "n3": {
-    "variable": "recurrent_lower_uti_suspected_cancer"
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 16,
+        "op": ">="
+      },
+      {
+        "variable": "recurrent_uti"
+      }
+    ]
   },
   "n4": {
-    "variable": "recurrent_upper_uti"
-  },
-  "n5": {
-    "variable": "gender_reassignment_surgery_altered_urethra"
+    "variable": "resistant_to_first_choice_antibiotics"
   },
   "n6": {
-    "variable": "current_episode_uti"
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 0.25,
+        "op": "<"
+      },
+      {
+        "variable": "recurrent_uti"
+      }
+    ]
   },
   "n8": {
     "type": "and",
     "conditions": [
       {
-        "variable": "perimenopause_or_menopause"
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 0.25,
+        "op": ">="
       },
       {
-        "variable": "behavioural_personal_hygiene_ineffective"
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 16,
+        "op": "<"
+      },
+      {
+        "variable": "recurrent_uti"
       }
     ]
   },
   "n10": {
-    "type": "and",
-    "conditions": [
-      {
-        "variable": "vaginal_oestrogen_not_effective_or_appropriate"
-      },
-      {
-        "variable": "exposed_to_trigger"
-      }
-    ]
-  },
-  "n12": {
-    "type": "and",
-    "conditions": [
-      {
-        "variable": "recurrent_uti"
-      },
-      {
-        "variable": "not_improved_by_vaginal_oestrogen"
-      },
-      {
-        "variable": "not_improved_by_single_dose_antibiotics"
-      }
-    ]
-  },
-  "n14": {
-    "variable": "methenamine_hippurate_not_effective"
-  },
-  "n18": {
-    "variable": "antibiotic_prophylaxis_stopped"
+    "variable": "resistant_to_first_choice_antibiotics"
   }
 }

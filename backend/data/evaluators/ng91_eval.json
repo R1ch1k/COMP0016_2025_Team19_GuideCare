@@ -3,21 +3,13 @@
     "type": "or",
     "conditions": [
       {
-        "type": "and",
-        "conditions": [
-          {
-            "type": "age_compare",
-            "variable": "age",
-            "threshold": 2,
-            "op": "<"
-          },
-          {
-            "variable": "infection_both_ears"
-          }
-        ]
+        "variable": "systemically_very_unwell"
       },
       {
-        "variable": "otorrhoea"
+        "variable": "serious_illness_condition"
+      },
+      {
+        "variable": "high_risk_complications"
       }
     ]
   },
@@ -40,76 +32,6 @@
             "variable": "infection_both_ears"
           }
         ]
-      }
-    ]
-  },
-  "n4": {
-    "type": "and",
-    "conditions": [
-      {
-        "variable": "immediate_antibiotic_not_given"
-      },
-      {
-        "type": "and",
-        "conditions": [
-          {
-            "variable": "no_eardrum_perforation"
-          },
-          {
-            "variable": "no_otorrhoea"
-          }
-        ]
-      }
-    ]
-  },
-  "n6": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "systemically_very_unwell"
-      },
-      {
-        "variable": "serious_illness_condition"
-      },
-      {
-        "variable": "high_risk_complications"
-      }
-    ]
-  },
-  "n10": {
-    "variable": "no_antibiotic_given"
-  },
-  "n12": {
-    "variable": "backup_antibiotic_given"
-  },
-  "n14": {
-    "variable": "symptoms_worsen_rapidly_significantly"
-  },
-  "n16": {
-    "variable": "considering_non_antimicrobial_treatments"
-  },
-  "n18": {
-    "type": "and",
-    "conditions": [
-      {
-        "variable": "penicillin_allergy_intolerance"
-      },
-      {
-        "variable": "not_pregnant"
-      }
-    ]
-  },
-  "n20": {
-    "type": "and",
-    "conditions": [
-      {
-        "variable": "macrolide_needed"
-      },
-      {
-        "variable": "pregnancy"
-      },
-      {
-        "variable": "true_penicillin_allergy"
       }
     ]
   }

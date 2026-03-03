@@ -113,96 +113,30 @@
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "to": "n2",
-      "label": "next"
-    },
-    {
-      "from": "n2",
-      "to": "n3",
-      "label": "yes"
-    },
-    {
-      "from": "n2",
-      "to": "n4",
-      "label": "no"
-    },
-    {
-      "from": "n4",
-      "to": "n5",
-      "label": "yes"
-    },
-    {
-      "from": "n4",
-      "to": "n13",
-      "label": "no"
-    },
-    {
-      "from": "n5",
-      "to": "n6",
-      "label": "no"
-    },
-    {
-      "from": "n5",
-      "to": "n12",
-      "label": "yes"
-    },
-    {
-      "from": "n6",
-      "to": "n7",
-      "label": "yes"
-    },
-    {
-      "from": "n6",
-      "to": "n13",
-      "label": "no"
-    },
-    {
-      "from": "n8",
-      "to": "n9",
-      "label": "next"
-    },
-    {
-      "from": "n9",
-      "to": "n10",
-      "label": "yes"
-    },
-    {
-      "from": "n9",
-      "to": "n11",
-      "label": "no"
-    },
-    {
-      "from": "n11",
-      "to": "n12",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n13",
-      "label": "no"
-    },
-    {
-      "from": "n15",
-      "to": "n16",
-      "label": "yes"
-    },
-    {
-      "from": "n15",
-      "to": "n14",
-      "label": "no"
-    },
-    {
-      "from": "n16",
-      "to": "n17",
-      "label": "yes"
-    },
-    {
-      "from": "n16",
-      "to": "n18",
-      "label": "no"
-    }
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n8", "label": "no"},
+    {"from": "n2", "to": "n3", "label": "yes"},
+    {"from": "n2", "to": "n4", "label": "no"},
+    {"from": "n4", "to": "n5", "label": "yes"},
+    {"from": "n4", "to": "n13", "label": "no"},
+    {"from": "n5", "to": "n12", "label": "yes"},
+    {"from": "n5", "to": "n6", "label": "no"},
+    {"from": "n6", "to": "n7", "label": "yes"},
+    {"from": "n6", "to": "n13", "label": "no"},
+    {"from": "n8", "to": "n9", "label": "yes"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n11", "to": "n13", "label": "no"},
+    {"from": "n3", "to": "n15", "label": "next"},
+    {"from": "n7", "to": "n15", "label": "next"},
+    {"from": "n10", "to": "n15", "label": "next"},
+    {"from": "n12", "to": "n15", "label": "next"},
+    {"from": "n13", "to": "n15", "label": "next"},
+    {"from": "n15", "to": "n16", "label": "yes"},
+    {"from": "n15", "to": "n14", "label": "no"},
+    {"from": "n16", "to": "n17", "label": "yes"},
+    {"from": "n16", "to": "n18", "label": "no"}
   ],
   "condition_evaluators": {
     "n1": {

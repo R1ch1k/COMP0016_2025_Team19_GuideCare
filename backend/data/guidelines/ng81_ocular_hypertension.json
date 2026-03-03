@@ -114,105 +114,26 @@
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n1",
-      "to": "n10",
-      "label": "otherwise"
-    },
-    {
-      "from": "n2",
-      "to": "n3",
-      "label": "next"
-    },
-    {
-      "from": "n3",
-      "to": "n4",
-      "label": "yes"
-    },
-    {
-      "from": "n3",
-      "to": "n2",
-      "label": "no"
-    },
-    {
-      "from": "n4",
-      "to": "n5",
-      "label": "next"
-    },
-    {
-      "from": "n5",
-      "to": "n6",
-      "label": "yes"
-    },
-    {
-      "from": "n5",
-      "to": "n2",
-      "label": "no"
-    },
-    {
-      "from": "n6",
-      "to": "n7",
-      "label": "next"
-    },
-    {
-      "from": "n7",
-      "to": "n8",
-      "label": "yes"
-    },
-    {
-      "from": "n7",
-      "to": "n2",
-      "label": "no"
-    },
-    {
-      "from": "n9",
-      "to": "n10",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n12",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n2",
-      "label": "no"
-    },
-    {
-      "from": "n13",
-      "to": "n14",
-      "label": "yes"
-    },
-    {
-      "from": "n15",
-      "to": "n14",
-      "label": "yes"
-    },
-    {
-      "from": "n16",
-      "to": "n17",
-      "label": "yes"
-    },
-    {
-      "from": "n16",
-      "to": "n2",
-      "label": "no"
-    },
-    {
-      "from": "n18",
-      "to": "n19",
-      "label": "yes"
-    },
-    {
-      "from": "n18",
-      "to": "n2",
-      "label": "no"
-    }
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n10", "label": "no"},
+    {"from": "n2", "to": "n9", "label": "next"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n13", "label": "no"},
+    {"from": "n13", "to": "n14", "label": "yes"},
+    {"from": "n13", "to": "n15", "label": "no"},
+    {"from": "n15", "to": "n14", "label": "yes"},
+    {"from": "n15", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n10", "to": "n18", "label": "next"},
+    {"from": "n14", "to": "n18", "label": "next"},
+    {"from": "n18", "to": "n19", "label": "yes"},
+    {"from": "n19", "to": "n16", "label": "next"},
+    {"from": "n16", "to": "n17", "label": "yes"},
+    {"from": "n17", "to": "n3", "label": "next"},
+    {"from": "n3", "to": "n4", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "next"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n6", "to": "n7", "label": "next"},
+    {"from": "n7", "to": "n8", "label": "yes"}
   ]
 }

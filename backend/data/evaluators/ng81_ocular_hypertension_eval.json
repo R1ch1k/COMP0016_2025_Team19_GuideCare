@@ -14,51 +14,38 @@
     ]
   },
   "n3": {
-    "variable": "iop_not_reduced_sufficiently_with_treatments"
-  },
-  "n5": {
-    "variable": "cannot_tolerate_current_treatment"
-  },
-  "n7": {
     "type": "and",
     "conditions": [
       {
-        "variable": "non_adherence_or_incorrect_technique"
+        "variable": "risk_of_visual_impairment"
       },
       {
-        "variable": "iop_not_reduced_sufficiently"
+        "variable": "cannot_tolerate_current_treatment"
       }
     ]
+  },
+  "n5": {
+    "variable": "cannot_tolerate_alternative_pga"
+  },
+  "n7": {
+    "variable": "cannot_tolerate_beta_blocker"
   },
   "n9": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "slt_not_suitable"
-      },
-      {
-        "variable": "chooses_not_to_have_slt"
-      },
-      {
-        "variable": "needs_interim_treatment"
-      }
-    ]
+    "variable": "slt_not_suitable"
   },
   "n11": {
-    "type": "or",
-    "conditions": [
-      {
-        "variable": "allergy_to_preservatives"
-      },
-      {
-        "variable": "significant_ocular_surface_disease"
-      }
-    ]
+    "variable": "iop_not_reduced_sufficiently"
   },
   "n13": {
-    "variable": "iop_not_reduced_sufficiently_with_current_treatment"
+    "variable": "chooses_not_to_have_slt"
   },
   "n15": {
-    "variable": "additional_treatment_needed_to_reduce_iop"
+    "variable": "waiting_for_slt_needs_treatment"
+  },
+  "n16": {
+    "variable": "current_treatment_not_reducing_iop"
+  },
+  "n18": {
+    "variable": "iop_not_reduced_with_pga"
   }
 }

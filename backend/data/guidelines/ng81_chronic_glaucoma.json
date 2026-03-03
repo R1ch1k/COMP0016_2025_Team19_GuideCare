@@ -13,7 +13,7 @@
     "IF person has newly diagnosed chronic open angle glaucoma THEN topical medicines from different therapeutic classes may be needed at the same time.",
     "IF person's IOP has not been reduced sufficiently after surgery THEN consider further glaucoma surgery OR cyclodiode laser OR 360° SLT OR pharmacological treatment.",
     "IF person with advanced chronic open angle glaucoma prefers not to have surgery OR surgery is not suitable THEN offer treatment with medicines from different therapeutic classes.",
-    "IF person’s adherence and eye drop instillation technique are satisfactory THEN offer further treatment and continue to monitor IOP.",
+    "IF person's adherence and eye drop instillation technique are satisfactory THEN offer further treatment and continue to monitor IOP.",
     "IF effects of initial 360° SLT have reduced THEN consider a second 360° SLT."
   ],
   "nodes": [
@@ -90,7 +90,7 @@
     {
       "id": "n15",
       "type": "condition",
-      "text": "Person’s adherence and eye drop instillation technique are satisfactory"
+      "text": "Person's adherence and eye drop instillation technique are satisfactory"
     },
     {
       "id": "n16",
@@ -106,108 +106,33 @@
       "id": "n18",
       "type": "action",
       "text": "Consider a second 360° SLT"
+    },
+    {
+      "id": "n19",
+      "type": "action",
+      "text": "Continue current treatment and monitor IOP regularly"
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n1",
-      "to": "n3",
-      "label": "no"
-    },
-    {
-      "from": "n3",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n3",
-      "to": "n4",
-      "label": "no"
-    },
-    {
-      "from": "n4",
-      "to": "n2",
-      "label": "yes"
-    },
-    {
-      "from": "n4",
-      "to": "n5",
-      "label": "no"
-    },
-    {
-      "from": "n5",
-      "to": "n6",
-      "label": "yes"
-    },
-    {
-      "from": "n5",
-      "to": "n7",
-      "label": "no"
-    },
-    {
-      "from": "n7",
-      "to": "n8",
-      "label": "yes"
-    },
-    {
-      "from": "n7",
-      "to": "n9",
-      "label": "no"
-    },
-    {
-      "from": "n9",
-      "to": "n10",
-      "label": "yes"
-    },
-    {
-      "from": "n9",
-      "to": "n11",
-      "label": "no"
-    },
-    {
-      "from": "n11",
-      "to": "n12",
-      "label": "yes"
-    },
-    {
-      "from": "n11",
-      "to": "n13",
-      "label": "no"
-    },
-    {
-      "from": "n13",
-      "to": "n14",
-      "label": "yes"
-    },
-    {
-      "from": "n13",
-      "to": "n15",
-      "label": "no"
-    },
-    {
-      "from": "n15",
-      "to": "n16",
-      "label": "yes"
-    },
-    {
-      "from": "n15",
-      "to": "n17",
-      "label": "no"
-    },
-    {
-      "from": "n17",
-      "to": "n18",
-      "label": "yes"
-    },
-    {
-      "from": "n17",
-      "to": "n1",
-      "label": "no"
-    }
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n3", "label": "no"},
+    {"from": "n3", "to": "n2", "label": "yes"},
+    {"from": "n3", "to": "n4", "label": "no"},
+    {"from": "n4", "to": "n2", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "no"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n5", "to": "n7", "label": "no"},
+    {"from": "n7", "to": "n8", "label": "yes"},
+    {"from": "n7", "to": "n9", "label": "no"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n11", "to": "n13", "label": "no"},
+    {"from": "n13", "to": "n14", "label": "yes"},
+    {"from": "n13", "to": "n15", "label": "no"},
+    {"from": "n15", "to": "n16", "label": "yes"},
+    {"from": "n15", "to": "n17", "label": "no"},
+    {"from": "n17", "to": "n18", "label": "yes"},
+    {"from": "n17", "to": "n19", "label": "no"}
   ]
 }
