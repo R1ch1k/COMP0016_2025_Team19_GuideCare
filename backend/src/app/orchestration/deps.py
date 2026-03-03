@@ -444,13 +444,20 @@ async def gpt_clarifier(
             if target_var in _bp_vars and bp_match:
                 extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
             elif target_var == "qrisk_10yr":
-                qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
-                if qrisk_num:
-                    extracted["qrisk_10yr"] = float(qrisk_num.group(1))
-                elif any(w in a_lower for w in ("less than 10", "below 10", "under 10", "low")):
+                # Check qualifier phrases BEFORE raw numbers — "less than 10%"
+                # contains "10" which the regex would incorrectly match as 10.0
+                if any(w in a_lower for w in ("less than 10", "below 10", "under 10")):
                     extracted["qrisk_10yr"] = 5
-                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10", "high")):
+                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10")):
                     extracted["qrisk_10yr"] = 15
+                elif a_lower.strip() in ("low", "low risk"):
+                    extracted["qrisk_10yr"] = 5
+                elif a_lower.strip() in ("high", "high risk"):
+                    extracted["qrisk_10yr"] = 15
+                else:
+                    qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
+                    if qrisk_num:
+                        extracted["qrisk_10yr"] = float(qrisk_num.group(1))
             elif target_var == "not_black_african_caribbean":
                 # Negated variable: "Is patient of African/Caribbean origin?"
                 # yes → not_black_african_caribbean = False
@@ -936,6 +943,8 @@ JSON:
         "needs_additional_iop_reduction",
         # NG91 otitis media — treatment outcome flags
         "high_risk_complications",
+        # NG84 sore throat — high risk of complications (with "of_" in name)
+        "high_risk_of_complications",
     }
     for var in _default_false_vars:
         if var in all_vars and var not in extracted:
@@ -984,8 +993,21 @@ JSON:
     if not on_bp_treatment:
         _treatment_outcome_vars.add("target_bp_achieved")
 
+    # Collect variable names provided via clarification answers (tagged questions).
+    # These are clinician-confirmed values and should NOT be deleted.
+    clarification_var_names = set()
+    import re as _re_pre
+    for q in (clarifications or {}).keys():
+        m = _re_pre.match(r"^\[var:(\w+)\]", q)
+        if m:
+            clarification_var_names.add(m.group(1))
+
+    # Treatment outcome vars represent decisions/outcomes that haven't happened
+    # yet during an initial consultation. The LLM can hallucinate both True and
+    # False values. Delete ALL LLM-guessed values — only keep if confirmed via
+    # clarification answers (e.g. follow-up visit).
     for var in _treatment_outcome_vars:
-        if var in extracted and not extracted[var]:
+        if var in extracted and var not in clarification_var_names:
             del extracted[var]
 
     # Variables that represent clinical actions/procedures — the LLM must NOT
@@ -995,12 +1017,6 @@ JSON:
         "abpm_tolerated", "abpm_daytime", "hbpm_average",  # NG136 — diagnostic procedures
         "abpm_accepted", "abpm_done",  # aliases (mapped above but just in case)
     }
-    clarification_var_names = set()
-    import re as _re_pre
-    for q in (clarifications or {}).keys():
-        m = _re_pre.match(r"^\[var:(\w+)\]", q)
-        if m:
-            clarification_var_names.add(m.group(1))
     for var in _clinician_action_vars:
         if var in extracted and var not in clarification_var_names:
             del extracted[var]
@@ -1053,13 +1069,20 @@ JSON:
             if target_var in _bp_vars and bp_match:
                 extracted[target_var] = f"{bp_match.group(1)}/{bp_match.group(2)}"
             elif target_var == "qrisk_10yr":
-                qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
-                if qrisk_num:
-                    extracted["qrisk_10yr"] = float(qrisk_num.group(1))
-                elif any(w in a_lower for w in ("less than 10", "below 10", "under 10", "low")):
+                # Check qualifier phrases BEFORE raw numbers — "less than 10%"
+                # contains "10" which the regex would incorrectly match as 10.0
+                if any(w in a_lower for w in ("less than 10", "below 10", "under 10")):
                     extracted["qrisk_10yr"] = 5
-                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10", "high")):
+                elif any(w in a_lower for w in ("greater than 10", "above 10", "over 10")):
                     extracted["qrisk_10yr"] = 15
+                elif a_lower.strip() in ("low", "low risk"):
+                    extracted["qrisk_10yr"] = 5
+                elif a_lower.strip() in ("high", "high risk"):
+                    extracted["qrisk_10yr"] = 15
+                else:
+                    qrisk_num = _re.search(r"(\d+\.?\d*)\s*%?", a_str)
+                    if qrisk_num:
+                        extracted["qrisk_10yr"] = float(qrisk_num.group(1))
             elif target_var == "not_black_african_caribbean":
                 if is_yes:
                     extracted["not_black_african_caribbean"] = False
