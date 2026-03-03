@@ -13,13 +13,20 @@ export type PatientStatus = (typeof PATIENT_STATUS_OPTIONS)[number];
 
 export interface PatientRecord {
   id: string;
+  backendId?: string;  // Backend UUID — used for WebSocket + API calls
   name: string;
   age: number;
+  gender?: string;
+  dateOfBirth?: string;  // ISO date string (YYYY-MM-DD)
+  nhsNumber?: string;
   primaryConcern: string;
   status: PatientStatus;
   lastUpdated: string;
   clinician: string;
   notes?: string;
+  conditions?: string[];
+  medications?: Array<{ name: string; dose?: string }>;
+  allergies?: string[];
 }
 
 interface PatientInfoPanelProps {

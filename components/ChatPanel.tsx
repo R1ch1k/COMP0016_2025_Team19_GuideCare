@@ -154,18 +154,27 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
             return;
         }
 
+        // If the patient already has a backend UUID, use it directly
+        if (selectedPatient.backendId) {
+            setBackendPatientId(selectedPatient.backendId);
+            return;
+        }
+
+        // Fallback: resolve by matching name against backend patients
         async function resolvePatient() {
             try {
                 const res = await fetch(`${BACKEND_HTTP_URL}/patients`);
                 if (!res.ok) return;
                 const patients = await res.json();
-                // Match by name (first_name + last_name)
                 const nameParts = selectedPatient!.name.split(" ");
                 const match = patients.find((p: { first_name: string; last_name: string }) =>
                     p.first_name === nameParts[0] && p.last_name === nameParts.slice(1).join(" ")
                 );
                 if (match) {
                     setBackendPatientId(match.id);
+                } else {
+                    console.warn("No backend match found for patient:", selectedPatient!.name);
+                    setBackendPatientId(null);
                 }
             } catch (err) {
                 console.warn("Failed to resolve backend patient:", err);

@@ -75,12 +75,15 @@ def build_graph(deps):
         WebSocket-friendly clarification loop (no interrupt()):
         - ask one question -> END
         - next user turn provides answer -> continue
+        - after all pre-generated questions answered, re-check for more missing vars
+        - max 3 rounds of clarification to prevent infinite loops
         """
         cid = state.get("conversation_id", "unknown")
         history_window = (state.get("conversation_history") or [])[-settings.MODEL_HISTORY_MAX_MESSAGES :]
         pending = list(state.get("clarification_questions") or [])
         answers = dict(state.get("clarification_answers") or {})
         awaiting = bool(state.get("awaiting_clarification_answer", False))
+        rounds = state.get("clarification_rounds", 0)
 
         # Ask next question and stop the graph
         if pending and not awaiting:
@@ -101,18 +104,37 @@ def build_graph(deps):
             a = state.get("last_user_message", "")
             answers[q] = a
             remaining = pending[1:]
-            still_need = len(remaining) > 0
 
             log_step(cid, "clarify_answer", question=q, remaining=len(remaining))
+
+            if remaining:
+                # More pre-generated questions to ask
+                return {
+                    "clarification_answers": answers,
+                    "clarification_questions": remaining,
+                    "awaiting_clarification_answer": False,
+                    "clarification_needed": True,
+                    "assistant_event": {},  # clear event
+                }
+
+            # All pre-generated questions answered — fall through to re-check
+            # whether more variables are still missing (e.g. user said "yes ABPM
+            # was done" but didn't provide the actual BP reading).
+
+        # Limit clarification rounds to prevent infinite loops
+        if rounds >= 3:
+            log_step(cid, "clarify_done", needed=False, reason="max_rounds")
             return {
+                "clarification_needed": False,
+                "clarification_questions": [],
                 "clarification_answers": answers,
-                "clarification_questions": remaining,
                 "awaiting_clarification_answer": False,
-                "clarification_needed": still_need,
-                "assistant_event": {},  # clear event
+                "clarification_rounds": rounds,
+                "assistant_event": {},
             }
 
-        # No pending questions yet: ask clarifier to generate them
+        # Generate (or re-generate) clarification questions based on what's
+        # still missing after incorporating previous answers
         log_step(cid, "clarify_generate_start")
         result = await with_retry_timeout(
             deps["gpt_clarifier"],
@@ -131,7 +153,9 @@ def build_graph(deps):
             return {
                 "clarification_needed": False,
                 "clarification_questions": [],
+                "clarification_answers": answers,
                 "awaiting_clarification_answer": False,
+                "clarification_rounds": rounds + 1,
                 "assistant_event": {},
             }
 
@@ -141,6 +165,7 @@ def build_graph(deps):
             "clarification_questions": questions,
             "clarification_answers": answers,
             "awaiting_clarification_answer": False,
+            "clarification_rounds": rounds + 1,
             "assistant_event": {},
         }
 

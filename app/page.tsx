@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ChatPanel from "@/components/ChatPanel";
 import { AnyGuideline, NICEGuideline } from "@/lib/types";
 import PatientInfoPanel, {
@@ -13,6 +13,8 @@ import { niceHypertensionGuideline } from "@/lib/guidelines/nice-hypertension";
 import { Eye } from "lucide-react";
 import SampleInputModal from "@/components/SampleInputModal";
 import ConnectDataModal from "@/components/ConnectDataModal";
+
+const BACKEND_HTTP_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 // All NICE guideline JSON files in public/guidelines/
 const GUIDELINE_FILES = [
@@ -75,50 +77,58 @@ export default function Home() {
         }
         loadGuidelines();
     }, []);
-    const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([
-        {
-            id: "PT-204",
-            name: "Alex Morgan",
-            age: 45,
-            primaryConcern: "Type 2 Diabetes",
-            status: "Needs Attention",
-            lastUpdated: "15 May 2024",
-            clinician: "Dr. Priya Desai",
-            notes: "A1C trending upward; medication review scheduled for tomorrow.",
-        },
-        {
-            id: "PT-317",
-            name: "Jordan Lee",
-            age: 62,
-            primaryConcern: "Hypertensive Emergency",
-            status: "Critical",
-            lastUpdated: "15 May 2024",
-            clinician: "Dr. Olivia Ramirez",
-            notes:
-                "Receiving IV labetalol. Repeat vitals in 10 minutes and confirm renal panel.",
-        },
-        {
-            id: "PT-411",
-            name: "Samantha Chen",
-            age: 33,
-            primaryConcern: "Postpartum Hemorrhage",
-            status: "Active",
-            lastUpdated: "14 May 2024",
-            clinician: "Dr. Miguel Alvarez",
-            notes:
-                "Responding to uterotonics. Monitor hemoglobin and consult hematology if <7.",
-        },
-        {
-            id: "PT-522",
-            name: "Christopher Young",
-            age: 70,
-            primaryConcern: "Acute Heart Failure Exacerbation",
-            status: "Stable",
-            lastUpdated: "13 May 2024",
-            clinician: "Dr. Amina El-Sayed",
-            notes: "Diuresis effective. Plan transition to oral regimen tomorrow.",
-        },
-    ]);
+    const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([]);
+    const [patientsLoaded, setPatientsLoaded] = useState(false);
+
+    // Load patients from backend on mount for persistence
+    const loadPatientsFromBackend = useCallback(async () => {
+        try {
+            const res = await fetch(`${BACKEND_HTTP_URL}/patients`);
+            if (!res.ok) return;
+            const patients = await res.json();
+            const records: PatientRecord[] = patients.map((p: {
+                id: string;
+                first_name: string;
+                last_name: string;
+                age: number;
+                gender?: string;
+                date_of_birth?: string;
+                nhs_number?: string;
+                conditions?: string[];
+                medications?: Array<{ name: string; dose?: string }>;
+                allergies?: string[];
+                clinical_notes?: Array<{ note: string }>;
+                updated_at?: string;
+            }) => ({
+                id: p.id,
+                backendId: p.id,
+                name: `${p.first_name} ${p.last_name}`,
+                age: p.age,
+                gender: p.gender,
+                dateOfBirth: p.date_of_birth,
+                nhsNumber: p.nhs_number,
+                primaryConcern: (p.conditions && p.conditions[0]) || "General",
+                status: "Needs Attention" as const,
+                lastUpdated: p.updated_at
+                    ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(p.updated_at))
+                    : formatLastUpdated(),
+                clinician: "Assigned clinician",
+                notes: p.clinical_notes?.[0]?.note,
+                conditions: p.conditions,
+                medications: p.medications,
+                allergies: p.allergies,
+            }));
+            setPatientRecords(records);
+        } catch (err) {
+            console.warn("Failed to load patients from backend:", err);
+        } finally {
+            setPatientsLoaded(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadPatientsFromBackend();
+    }, [loadPatientsFromBackend]);
 
     const formatLastUpdated = () => {
         return new Intl.DateTimeFormat("en-GB", {
@@ -144,6 +154,13 @@ export default function Home() {
                 ...filtered,
             ];
         });
+
+        // Auto-select the newly created patient
+        setSelectedPatient({
+            ...record,
+            lastUpdated,
+        });
+        setSessionKey((prev) => prev + 1);
     };
 
     const handleGuidelineSelect = (guideline: AnyGuideline) => {
@@ -531,6 +548,7 @@ export default function Home() {
             <ConnectDataModal
                 isOpen={isConnectDataOpen}
                 onClose={() => setIsConnectDataOpen(false)}
+                onImportComplete={() => loadPatientsFromBackend()}
             />
         </div>
     );

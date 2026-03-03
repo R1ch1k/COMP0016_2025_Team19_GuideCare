@@ -166,11 +166,20 @@ class TestClarification:
 
     @pytest.mark.asyncio
     async def test_clarify_consumes_answer_and_continues(self):
-        """After a question is emitted, the next turn should consume the answer."""
-        deps = _mock_deps(clarify_response={
-            "done": False,
-            "questions": ["What is the FeverPAIN score?"],
-        })
+        """After a question is emitted and answered, the clarifier re-checks for
+        missing variables. If no more are missing, the pipeline continues to
+        guideline selection."""
+        # Stateful mock: returns questions on first call, done on second (after answers)
+        call_count = {"n": 0}
+        async def _stateful_clarify(symptoms, history, patient, triage, answers):
+            call_count["n"] += 1
+            if not answers:
+                return {"done": False, "questions": ["What is the FeverPAIN score?"]}
+            # After receiving answer, no more questions needed
+            return {"done": True, "questions": []}
+
+        deps = _mock_deps()
+        deps["gpt_clarifier"] = _stateful_clarify
         graph = build_graph(deps)
         config = {"configurable": {"thread_id": "conv-clarify-2"}}
 
@@ -186,7 +195,8 @@ class TestClarification:
         )
         assert state1.get("awaiting_clarification_answer") is True
 
-        # Second turn: answer the question — should continue pipeline
+        # Second turn: answer the question — clarifier re-checks and finds
+        # nothing else missing, so pipeline continues to guideline selection
         state2 = await graph.ainvoke(
             {
                 "patient_id": "test-4",
@@ -201,6 +211,65 @@ class TestClarification:
         assert len(answers) >= 1
         # Should have proceeded to guideline selection
         assert state2.get("selected_guideline") is not None
+
+    @pytest.mark.asyncio
+    async def test_clarify_multi_round(self):
+        """After answering the first question, if the clarifier finds more
+        missing variables, it should ask another question (multi-round)."""
+        round_num = {"n": 0}
+        async def _multi_round_clarify(symptoms, history, patient, triage, answers):
+            round_num["n"] += 1
+            if not answers:
+                return {"done": False, "questions": ["Is ABPM tolerated?"]}
+            if "Is ABPM tolerated?" in answers and "What is the ABPM reading?" not in answers:
+                return {"done": False, "questions": ["What is the ABPM reading?"]}
+            return {"done": True, "questions": []}
+
+        deps = _mock_deps()
+        deps["gpt_clarifier"] = _multi_round_clarify
+        graph = build_graph(deps)
+        config = {"configurable": {"thread_id": "conv-multi-round"}}
+
+        # Turn 1: initial message → clarifier asks ABPM question
+        state1 = await graph.ainvoke(
+            {
+                "patient_id": "test-mr",
+                "conversation_id": "conv-multi-round",
+                "last_user_message": "BP is 160/100",
+                "conversation_history": [{"role": "user", "content": "BP is 160/100"}],
+            },
+            config=config,
+        )
+        evt1 = state1.get("assistant_event", {})
+        assert evt1.get("type") == "clarification_question"
+        assert "ABPM tolerated" in evt1.get("content", "")
+
+        # Turn 2: answer ABPM tolerated → clarifier re-checks and asks for reading
+        state2 = await graph.ainvoke(
+            {
+                "patient_id": "test-mr",
+                "conversation_id": "conv-multi-round",
+                "last_user_message": "yes ABPM was done",
+                "conversation_history": [{"role": "user", "content": "yes ABPM was done"}],
+            },
+            config=config,
+        )
+        evt2 = state2.get("assistant_event", {})
+        assert evt2.get("type") == "clarification_question"
+        assert "ABPM reading" in evt2.get("content", "")
+
+        # Turn 3: provide the reading → should proceed to recommendation
+        state3 = await graph.ainvoke(
+            {
+                "patient_id": "test-mr",
+                "conversation_id": "conv-multi-round",
+                "last_user_message": "ABPM reading is 150/95",
+                "conversation_history": [{"role": "user", "content": "ABPM reading is 150/95"}],
+            },
+            config=config,
+        )
+        assert state3.get("selected_guideline") is not None
+        assert state3.get("final_recommendation")
 
 
 class TestGuidelineSelection:

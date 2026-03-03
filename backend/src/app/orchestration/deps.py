@@ -350,13 +350,13 @@ async def gpt_clarifier(
     """Generate clarification questions driven by the guideline evaluator.
 
     Uses the guideline engine to find missing variables, extracts what we can
-    from symptoms text + patient record using regex helpers, then only asks
-    about truly missing variables.
-    """
-    # If we already have answers, skip clarification
-    if answers:
-        return {"done": True, "questions": []}
+    from symptoms text + patient record + previous answers using regex helpers,
+    then only asks about truly missing variables.
 
+    Called on every clarification round — incorporates previous answers to
+    check if more variables are still needed (e.g. ABPM tolerated → now need
+    the actual ABPM reading).
+    """
     # Use triage-suggested guideline first, fall back to keyword guess
     guideline_id = (triage or {}).get("suggested_guideline", "")
     if not guideline_id or not get_guideline(guideline_id):
@@ -396,6 +396,73 @@ async def gpt_clarifier(
     if vitals.get("last_bp") and "clinic_bp" not in extracted:
         extracted["clinic_bp"] = vitals["last_bp"]
         extracted["bp"] = vitals["last_bp"]
+
+    # Incorporate clarification answers into extracted variables
+    import re as _re
+    for q, a in (answers or {}).items():
+        q_lower = q.lower()
+        a_str = str(a) if a else ""
+        a_lower = a_str.lower()
+
+        bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a_str)
+
+        # ABPM-specific answers
+        if "abpm" in q_lower or "ambulatory" in q_lower:
+            if any(w in a_lower for w in ("yes", "done", "tolerated", "completed", "accepted")):
+                extracted["abpm_tolerated"] = True
+            elif any(w in a_lower for w in ("no", "not", "declined", "refused")):
+                extracted["abpm_tolerated"] = False
+            if bp_match:
+                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            continue
+
+        # ABPM reading / daytime average
+        if ("abpm" in q_lower or "ambulatory" in q_lower) and ("reading" in q_lower or "average" in q_lower or "result" in q_lower or "level" in q_lower):
+            if bp_match:
+                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            continue
+
+        # Home BP / HBPM answers
+        if ("home" in q_lower or "hbpm" in q_lower) and ("bp" in q_lower or "blood pressure" in q_lower or "monitor" in q_lower):
+            if bp_match:
+                extracted["hbpm_average"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            continue
+
+        # Generic BP reading answers
+        if ("bp" in q_lower or "blood pressure" in q_lower) and bp_match:
+            reading = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            if "abpm" in a_lower or "ambulatory" in a_lower:
+                extracted["abpm_daytime"] = reading
+            elif "home" in a_lower or "hbpm" in a_lower:
+                extracted["hbpm_average"] = reading
+            else:
+                extracted.setdefault("clinic_bp", reading)
+            continue
+
+        # Generic boolean yes/no answers — map to variable by keyword matching
+        is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive", "present"))
+        is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "absent", "none"))
+        if is_yes or is_no:
+            # Try to match question keywords to known variable names
+            for var_name in list(VAR_DESCRIPTIONS.keys()):
+                var_words = var_name.lower().replace("_", " ").split()
+                if any(w in q_lower for w in var_words if len(w) > 3):
+                    if var_name not in extracted:
+                        extracted[var_name] = is_yes
+                    break
+
+        # Numeric answers (e.g. temperature, GCS score, IOP)
+        num_match = _re.search(r"(\d+\.?\d*)", a_str)
+        if num_match:
+            val = float(num_match.group(1))
+            if "temperature" in q_lower or "fever" in q_lower:
+                extracted.setdefault("fever", val >= 38.0)
+                extracted.setdefault("temperature", val)
+            elif "gcs" in q_lower or "glasgow" in q_lower:
+                extracted.setdefault("gcs_score", int(val))
+            elif "iop" in q_lower or "intraocular" in q_lower:
+                extracted.setdefault("iop", int(val))
+                extracted.setdefault("intraocular_pressure", int(val))
 
     # Merge extracted into known_vars (extracted values override)
     for k, v in extracted.items():

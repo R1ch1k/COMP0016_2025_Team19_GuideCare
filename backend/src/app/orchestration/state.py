@@ -25,6 +25,7 @@ class ConversationState(TypedDict, total=False):
     clarification_questions: List[str]
     clarification_answers: Dict[str, Any]
     awaiting_clarification_answer: bool
+    clarification_rounds: int
 
     # guideline processing
     selected_guideline: str
