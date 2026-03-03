@@ -90,5 +90,6 @@ export interface ChatMessage {
   decision?: DecisionResult;
   pathwayWalked?: string[];
   selectedGuideline?: string;
+  isUrgent?: boolean;
 }
 

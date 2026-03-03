@@ -473,21 +473,23 @@
       "diastolic_max": 119
     },
     "n13": {
-      "variable": "abpm_accepted"
+      "variable": "abpm_tolerated"
     },
     "n16": {
       "type": "or",
-      "variables": [
-        "hypertension_confirmed"
+      "conditions": [
+        { "type": "bp_compare", "variable": "abpm_daytime", "threshold": "135/85", "op": ">=" },
+        { "type": "bp_compare", "variable": "hbpm_average", "threshold": "135/85", "op": ">=" }
       ]
     },
     "n19": {
       "type": "or",
-      "variables": [
-        "target_organ_damage",
-        "cvd",
-        "renal_disease",
-        "diabetes"
+      "conditions": [
+        { "variable": "target_organ_damage" },
+        { "variable": "cardiovascular_disease" },
+        { "variable": "renal_disease" },
+        { "variable": "diabetes" },
+        { "type": "numeric_compare", "variable": "qrisk_10yr", "threshold": 10, "op": ">=" }
       ]
     },
     "n21": {
@@ -509,10 +511,11 @@
       "op": ">="
     },
     "n29": {
-      "type": "age_compare",
-      "variable": "age",
-      "threshold": 55,
-      "op": "<"
+      "type": "and",
+      "conditions": [
+        { "type": "age_compare", "variable": "age", "threshold": 55, "op": "<" },
+        { "variable": "not_black_african_caribbean" }
+      ]
     },
     "n32": {
       "variable": "target_bp_achieved"

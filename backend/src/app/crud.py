@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Conversation, Patient
-from app.schemas import PatientCreate
+from app.db.models import Conversation, Diagnosis, Patient
+from app.schemas import PatientCreate, PatientUpdate
 
 
 async def compute_age(dob: date) -> int:
@@ -48,6 +48,33 @@ async def get_patient(db: AsyncSession, patient_id: UUID):
 
 async def list_patients(db: AsyncSession, limit: int = 100):
     q = await db.execute(select(Patient).limit(limit))
+    return q.scalars().all()
+
+
+async def update_patient(db: AsyncSession, patient_id: UUID, payload: PatientUpdate) -> Patient | None:
+    patient = await get_patient(db, patient_id)
+    if not patient:
+        return None
+    data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else payload.dict(exclude_unset=True)
+    for field, value in data.items():
+        if value is not None:
+            if field == "medications":
+                setattr(patient, field, [_dump_model(m) if hasattr(m, "model_dump") or hasattr(m, "dict") else m for m in value])
+            else:
+                setattr(patient, field, value)
+    patient.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(patient)
+    return patient
+
+
+async def get_patient_diagnoses(db: AsyncSession, patient_id: UUID, limit: int = 10):
+    q = await db.execute(
+        select(Diagnosis)
+        .where(Diagnosis.patient_id == patient_id)
+        .order_by(Diagnosis.diagnosed_at.desc())
+        .limit(limit)
+    )
     return q.scalars().all()
 
 

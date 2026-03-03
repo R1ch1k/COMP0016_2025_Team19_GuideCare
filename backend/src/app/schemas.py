@@ -36,6 +36,15 @@ class PatientCreate(BaseModel):
     clinical_notes: List[dict] = Field(default_factory=list)
 
 
+class PatientUpdate(BaseModel):
+    """Partial update schema — only provided fields are updated."""
+    conditions: Optional[List[str]] = None
+    medications: Optional[List[Medication]] = None
+    allergies: Optional[List[str]] = None
+    recent_vitals: Optional[dict] = None
+    clinical_notes: Optional[List[dict]] = None
+
+
 class PatientOut(ORMBase):
     id: UUID
     nhs_number: str

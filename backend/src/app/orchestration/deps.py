@@ -382,14 +382,17 @@ async def gpt_clarifier(
     extracted = fix_variable_extraction({}, symptom_text)
     extracted = fix_variable_extraction_v2(extracted, symptom_text)
 
-    # Also extract from patient conditions
+    # Extract comorbidities from patient record (source of truth)
     conditions = patient_record.get("conditions", [])
-    for cond in conditions:
-        cond_lower = cond.lower()
-        if "diabetes" in cond_lower:
-            extracted["diabetes"] = True
-        if "hypertension" in cond_lower:
-            extracted.setdefault("hypertension_history", True)
+    conds_lower = [c.lower() for c in conditions]
+    if "diabetes" in known_vars or "diabetes" in (g_data.get("all_vars") or set()):
+        extracted["diabetes"] = any("diabetes" in c for c in conds_lower)
+    if "cardiovascular_disease" in known_vars or "cardiovascular_disease" in (g_data.get("all_vars") or set()):
+        extracted["cardiovascular_disease"] = any(w in c for c in conds_lower for w in ("cardiovascular", "heart disease", "cvd", "coronary"))
+    if "renal_disease" in known_vars or "renal_disease" in (g_data.get("all_vars") or set()):
+        extracted["renal_disease"] = any(w in c for c in conds_lower for w in ("renal", "kidney", "ckd"))
+    if any("hypertension" in c for c in conds_lower):
+        extracted.setdefault("hypertension_history", True)
 
     # Extract BP from recent vitals
     vitals = patient_record.get("recent_vitals", {})
@@ -439,6 +442,21 @@ async def gpt_clarifier(
                 extracted.setdefault("clinic_bp", reading)
             continue
 
+        # Ethnicity / African-Caribbean origin — handle negated variable
+        # "not_black_african_caribbean" = True when patient is NOT of that origin
+        # So if question asks "Is the patient of black African/Caribbean origin?"
+        # and user says "no" → not_black_african_caribbean = True
+        if any(w in q_lower for w in ("african", "caribbean", "ethnicity", "black")):
+            is_yes_eth = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
+            is_no_eth = any(w in a_lower for w in ("no", "false", "negative", "denied", "not"))
+            if is_yes_eth:
+                # Patient IS of black African/Caribbean origin
+                extracted["not_black_african_caribbean"] = False
+            elif is_no_eth:
+                # Patient is NOT of black African/Caribbean origin
+                extracted["not_black_african_caribbean"] = True
+            continue
+
         # Generic boolean yes/no answers — map to variable by keyword matching
         is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive", "present"))
         is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "absent", "none"))
@@ -448,7 +466,11 @@ async def gpt_clarifier(
                 var_words = var_name.lower().replace("_", " ").split()
                 if any(w in q_lower for w in var_words if len(w) > 3):
                     if var_name not in extracted:
-                        extracted[var_name] = is_yes
+                        # Handle negated variable names (not_X = opposite of answer)
+                        if var_name.startswith("not_") or var_name.startswith("no_"):
+                            extracted[var_name] = is_no
+                        else:
+                            extracted[var_name] = is_yes
                     break
 
         # Numeric answers (e.g. temperature, GCS score, IOP)
@@ -476,6 +498,27 @@ async def gpt_clarifier(
 
     missing = get_missing_variables_for_next_step(nodes, edges, evaluator, known_vars)
 
+    # Filter out variables that shouldn't be asked via clarification:
+    # - Comorbidities should come from the patient record, not be asked
+    # - Treatment-outcome vars shouldn't be asked for patients not on treatment
+    _record_only_vars = {"diabetes", "cardiovascular_disease", "renal_disease",
+                         "target_organ_damage"}
+    _treatment_vars = {"target_bp_achieved", "treatment_response", "treatment_completed"}
+    patient_meds = patient_record.get("medications") or []
+    on_treatment = len(patient_meds) > 0
+
+    filtered_missing = []
+    for var in missing:
+        if var in _record_only_vars:
+            # Default to False — these come from structured patient data
+            known_vars[var] = False
+            continue
+        if var in _treatment_vars and not on_treatment:
+            # Skip treatment-outcome questions for patients not on treatment
+            continue
+        filtered_missing.append(var)
+    missing = filtered_missing
+
     if not missing:
         return {"done": True, "questions": []}
 
@@ -484,6 +527,10 @@ async def gpt_clarifier(
         "clinic_bp": "the patient's most recent clinic blood pressure reading (e.g. 155/95)",
         "age": "the patient's age",
         "gender": "the patient's gender",
+        "abpm_tolerated": "whether the patient has had or can tolerate ambulatory blood pressure monitoring (ABPM)",
+        "abpm_daytime": "the patient's ABPM daytime average blood pressure reading (e.g. 150/95)",
+        "hbpm_average": "the patient's home blood pressure monitoring (HBPM) average reading (e.g. 145/90)",
+        "not_black_african_caribbean": "whether the patient is of black African or African-Caribbean family origin (answer yes/no)",
         "fever": "whether the patient has a fever and if so what temperature",
         "duration": "how long the symptoms have been present (in days)",
         "vomiting_count": "how many times the patient has vomited",
@@ -501,6 +548,11 @@ async def gpt_clarifier(
         "acute_treatment": "what acute treatment the patient received",
         "emergency_signs": "whether there are any emergency/red flag signs",
         "newly_diagnosed": "whether this is a new diagnosis",
+        "cardiovascular_disease": "whether the patient has cardiovascular disease",
+        "renal_disease": "whether the patient has renal/kidney disease",
+        "diabetes": "whether the patient has diabetes",
+        "target_organ_damage": "whether there is evidence of target organ damage",
+        "target_bp_achieved": "whether the patient's blood pressure is at target on current treatment",
     }
 
     # Generate questions for up to 2 missing variables
@@ -685,7 +737,6 @@ JSON:
         "abpm_average": "abpm_daytime",
         "abpm_reading": "abpm_daytime",
         "abpm_result": "abpm_daytime",
-        "hypertension_confirmed": "abpm_daytime",
         "cvd": "cardiovascular_disease",
         "cv_disease": "cardiovascular_disease",
         "heart_disease": "cardiovascular_disease",
@@ -725,27 +776,38 @@ JSON:
         elif alias in extracted:
             del extracted[alias]
 
-    # Enrich from patient record — map structured patient data to evaluator vars
+    # Enrich from patient record — map structured patient data to evaluator vars.
+    # IMPORTANT: For comorbidities (diabetes, CVD, renal), the patient record is
+    # the source of truth. The LLM may hallucinate these from symptom text.
+    # We OVERRIDE LLM values with patient record data for these fields.
     if patient.get("age") and "age" not in extracted:
         extracted["age"] = patient["age"]
     if patient.get("conditions"):
         conds_lower = [c.lower() for c in patient["conditions"]]
 
-        # Detect which conditions the patient HAS
+        # Detect which conditions the patient HAS from their medical record
         has_diabetes = any("diabetes" in c for c in conds_lower)
         has_cvd = any(w in c for c in conds_lower for w in ("cardiovascular", "heart disease", "cvd", "coronary"))
         has_renal = any(w in c for c in conds_lower for w in ("renal", "kidney", "ckd"))
         has_hypertension = any("hypertension" in c for c in conds_lower)
 
-        # Set True/False based on patient conditions (not just True when present)
+        # Override LLM-extracted comorbidities with patient record truth
         if "diabetes" in all_vars:
-            extracted.setdefault("diabetes", has_diabetes)
+            extracted["diabetes"] = has_diabetes
         if "cardiovascular_disease" in all_vars:
-            extracted.setdefault("cardiovascular_disease", has_cvd)
+            extracted["cardiovascular_disease"] = has_cvd
         if "renal_disease" in all_vars:
-            extracted.setdefault("renal_disease", has_renal)
+            extracted["renal_disease"] = has_renal
         if has_hypertension:
             extracted.setdefault("hypertension_history", True)
+    else:
+        # No conditions on record — default comorbidities to False
+        if "diabetes" in all_vars:
+            extracted.setdefault("diabetes", False)
+        if "cardiovascular_disease" in all_vars:
+            extracted.setdefault("cardiovascular_disease", False)
+        if "renal_disease" in all_vars:
+            extracted.setdefault("renal_disease", False)
 
     if patient.get("recent_vitals", {}).get("last_bp") and "clinic_bp" not in extracted:
         extracted["clinic_bp"] = patient["recent_vitals"]["last_bp"]
@@ -766,9 +828,13 @@ JSON:
     # These are emergency/safety red flags across all guidelines that should be false
     # unless explicitly mentioned in the clinical scenario.
     _default_false_vars = {
-        # NG136 hypertension
+        # NG136 hypertension — emergency flags
         "emergency_signs", "retinal_haemorrhage", "papilloedema",
         "life_threatening_symptoms", "target_organ_damage",
+        # NG136 hypertension — comorbidities (default False unless patient record says otherwise)
+        # These are checked earlier from patient conditions (line ~386), so only
+        # default to False here if the patient record didn't already set them True.
+        "cardiovascular_disease", "renal_disease", "diabetes",
         # NG232 head injury
         "basal_skull_fracture", "suspected_open_fracture", "intubation_needed",
         "suspicion_non_accidental_injury", "suspected_cervical_spine_injury",
@@ -869,26 +935,58 @@ JSON:
                     extracted["target_bp_achieved"] = False
 
     # Merge in clarification answers — map answer text to correct variable names
+    import re as _re
     for q, a in (clarifications or {}).items():
         q_lower = q.lower()
+        a_lower = (a or "").lower()
+
         # Check for ABPM-related answers
         if "abpm" in q_lower or "ambulatory" in q_lower:
             if "abpm_tolerated" not in extracted or not extracted["abpm_tolerated"]:
-                a_lower = a.lower()
                 if any(w in a_lower for w in ("yes", "done", "tolerated", "completed")):
                     extracted["abpm_tolerated"] = True
-                    # Try to extract the ABPM reading from the answer
-                    import re as _re
                     bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
                     if bp_match and "abpm_daytime" not in extracted:
                         extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+                elif any(w in a_lower for w in ("no", "not", "declined", "refused")):
+                    extracted["abpm_tolerated"] = False
+            # Also check for BP reading in the answer even if tolerated already set
+            bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
+            if bp_match and "abpm_daytime" not in extracted:
+                extracted["abpm_daytime"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
+            continue
+
+        # Ethnicity / African-Caribbean answers — handle negated variable
+        if any(w in q_lower for w in ("african", "caribbean", "ethnicity", "black")):
+            is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
+            is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "not"))
+            if is_yes:
+                extracted["not_black_african_caribbean"] = False
+            elif is_no:
+                extracted["not_black_african_caribbean"] = True
+            continue
+
+        # HBPM answers
+        if ("home" in q_lower or "hbpm" in q_lower) and ("bp" in q_lower or "blood pressure" in q_lower or "monitor" in q_lower):
+            bp_match = _re.search(r"(\d{2,3})\s*/\s*(\d{2,3})", a)
+            if bp_match:
+                extracted["hbpm_average"] = f"{bp_match.group(1)}/{bp_match.group(2)}"
             continue
 
         for var_name in all_vars:
             var_words = var_name.lower().replace("_", " ").split()
             if any(w in q_lower for w in var_words if len(w) > 3):
                 if var_name not in extracted:
-                    extracted[var_name] = a
+                    # Parse boolean answers properly
+                    is_yes = any(w in a_lower for w in ("yes", "true", "confirmed", "positive"))
+                    is_no = any(w in a_lower for w in ("no", "false", "negative", "denied", "none"))
+                    if is_yes or is_no:
+                        if var_name.startswith("not_") or var_name.startswith("no_"):
+                            extracted[var_name] = is_no
+                        else:
+                            extracted[var_name] = is_yes
+                    else:
+                        extracted[var_name] = a
                 break
 
     logger.info("Final extracted variables: %s", {k: v for k, v in extracted.items() if v is not None})
@@ -908,6 +1006,11 @@ def _extract_var_names(spec: dict) -> List[str]:
         for sub in spec["conditions"]:
             if isinstance(sub, dict):
                 names.extend(_extract_var_names(sub))
+    # Safety: handle "variables" shorthand (list of variable name strings)
+    if "variables" in spec and isinstance(spec["variables"], list):
+        for v in spec["variables"]:
+            if isinstance(v, str):
+                names.append(v)
     return names
 
 

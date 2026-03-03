@@ -97,7 +97,8 @@ export default function Home() {
                 conditions?: string[];
                 medications?: Array<{ name: string; dose?: string }>;
                 allergies?: string[];
-                clinical_notes?: Array<{ note: string }>;
+                clinical_notes?: Array<{ date: string; guideline: string; recommendation: string; urgency?: string; note?: string }>;
+                recent_vitals?: Record<string, string | number>;
                 updated_at?: string;
             }) => ({
                 id: p.id,
@@ -113,10 +114,12 @@ export default function Home() {
                     ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(p.updated_at))
                     : formatLastUpdated(),
                 clinician: "Assigned clinician",
-                notes: p.clinical_notes?.[0]?.note,
+                notes: p.clinical_notes?.[0]?.note || (p.clinical_notes?.[0]?.recommendation ? p.clinical_notes[0].recommendation.slice(0, 100) + "..." : undefined),
                 conditions: p.conditions,
                 medications: p.medications,
                 allergies: p.allergies,
+                recentVitals: p.recent_vitals,
+                clinicalNotes: p.clinical_notes,
             }));
             setPatientRecords(records);
         } catch (err) {
@@ -506,6 +509,7 @@ export default function Home() {
                             guideline={activeGuideline}
                             allGuidelines={guidelines}
                             selectedPatient={selectedPatient}
+                            onDiagnosisComplete={loadPatientsFromBackend}
                         />
                     }
                     rightPanel={
@@ -514,6 +518,7 @@ export default function Home() {
                             onAddPatient={() => setIsAddPatientOpen(true)}
                             onConnect={() => setIsConnectDataOpen(true)}
                             selectedPatientId={selectedPatient?.id}
+                            allGuidelines={guidelines}
                             onSelectPatient={(patient) => {
                                 setSelectedPatient(patient);
                                 setSessionKey((prev) => prev + 1);

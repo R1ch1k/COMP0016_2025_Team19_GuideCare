@@ -251,6 +251,9 @@ def evaluate_single_condition(condition_spec, variables):
     # AND logic
     if ctype == "and":
         sub_conditions = condition_spec.get("conditions", [])
+        # Safety: handle "variables" shorthand (list of variable name strings)
+        if not sub_conditions and "variables" in condition_spec:
+            sub_conditions = [{"variable": v} for v in condition_spec["variables"]]
         results = [evaluate_single_condition(c, variables) for c in sub_conditions]
         if any(r is None for r in results):
             return None
@@ -259,6 +262,9 @@ def evaluate_single_condition(condition_spec, variables):
     # OR logic
     if ctype == "or":
         sub_conditions = condition_spec.get("conditions", [])
+        # Safety: handle "variables" shorthand (list of variable name strings)
+        if not sub_conditions and "variables" in condition_spec:
+            sub_conditions = [{"variable": v} for v in condition_spec["variables"]]
         results = [evaluate_single_condition(c, variables) for c in sub_conditions]
         if any(r is True for r in results):
             return True
@@ -433,6 +439,12 @@ def _collect_missing_from_spec(spec, variables, missing_list):
         for sub in spec["conditions"]:
             _collect_missing_from_spec(sub, variables, missing_list)
 
+    # Safety: handle "variables" shorthand (list of variable name strings)
+    if ctype in ("and", "or") and "variables" in spec:
+        for var_name in spec["variables"]:
+            if var_name not in variables:
+                missing_list.append(var_name)
+
     if ctype == "treatment_type" and "variable" in spec:
         var_name = spec["variable"]
         if var_name not in variables:
@@ -461,6 +473,11 @@ def _collect_vars_from_spec(spec, var_set):
     if "conditions" in spec and isinstance(spec["conditions"], list):
         for sub in spec["conditions"]:
             _collect_vars_from_spec(sub, var_set)
+    # Safety: handle "variables" shorthand
+    if "variables" in spec and isinstance(spec["variables"], list):
+        for v in spec["variables"]:
+            if isinstance(v, str):
+                var_set.add(v)
 
 
 def get_missing_variables_for_next_step(

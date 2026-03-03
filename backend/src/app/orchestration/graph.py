@@ -235,9 +235,31 @@ def build_graph(deps):
         log_step(cid, "format_output_start", guideline=guideline)
 
         if state.get("urgent_escalation"):
-            rec = "Your symptoms may need urgent medical attention. If severe or worsening, seek emergency care immediately."
+            triage = state.get("triage_result") or {}
+            urgency = triage.get("urgency", "emergency").upper()
+            reason = triage.get("reasoning") or triage.get("reason") or "Clinical assessment indicates potential emergency."
+            suggested = triage.get("suggested_guideline") or ""
+
+            rec_parts = [
+                f"**URGENT — {urgency} PRIORITY**\n",
+                "This patient's presentation requires **immediate clinical review**.\n",
+            ]
+            if reason:
+                rec_parts.append(f"**Reason:** {reason}\n")
+            rec_parts.append("**Recommended actions:**")
+            rec_parts.append("- Escalate to senior clinician or emergency team immediately")
+            rec_parts.append("- Do NOT delay treatment pending further investigation")
+            rec_parts.append("- Follow local emergency protocols")
+            if suggested:
+                rec_parts.append(f"\nRefer to NICE {suggested} for clinical pathway guidance.")
+
+            rec = "\n".join(rec_parts)
             log_step(cid, "format_output_done", urgent=True)
-            return {"final_recommendation": rec, "citation": guideline}
+            return {
+                "final_recommendation": rec,
+                "citation": suggested or guideline,
+                "urgent_escalation": True,
+            }
 
         out = await with_retry_timeout(
             deps["format_output_20b"],

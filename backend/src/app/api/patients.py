@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
-from app.schemas import PatientCreate, PatientOut
+from app.schemas import PatientCreate, PatientOut, PatientUpdate
 from app import crud
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,34 @@ async def patient_context(patient_id: UUID, db: AsyncSession = Depends(get_async
 @router.post("", response_model=PatientOut, status_code=201)
 async def create_patient(payload: PatientCreate, db: AsyncSession = Depends(get_async_session)):
     return await crud.create_patient(db, payload)
+
+
+@router.patch("/{patient_id}", response_model=PatientOut)
+async def update_patient(patient_id: UUID, payload: PatientUpdate, db: AsyncSession = Depends(get_async_session)):
+    p = await crud.update_patient(db, patient_id, payload)
+    if not p:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return p
+
+
+@router.get("/{patient_id}/diagnoses")
+async def get_patient_diagnoses(patient_id: UUID, db: AsyncSession = Depends(get_async_session)):
+    """Get diagnosis history for a patient (most recent first)."""
+    p = await crud.get_patient(db, patient_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    diagnoses = await crud.get_patient_diagnoses(db, patient_id)
+    return [
+        {
+            "id": str(d.id),
+            "selected_guideline": d.selected_guideline,
+            "final_recommendation": d.final_recommendation,
+            "urgency": d.urgency,
+            "pathway_walked": d.pathway_walked or [],
+            "diagnosed_at": d.diagnosed_at.isoformat() if d.diagnosed_at else None,
+        }
+        for d in diagnoses
+    ]
 
 
 def _parse_json_field(value: str) -> list | dict:

@@ -39,6 +39,7 @@ interface ChatPanelProps {
     guideline: AnyGuideline | null;
     allGuidelines?: AnyGuideline[];
     selectedPatient?: PatientRecord | null;
+    onDiagnosisComplete?: () => void;
 }
 
 // Parse backend pathway steps like "n1(action)" into human-readable format
@@ -131,7 +132,7 @@ function PathwayViewer({ pathway, guidelineId, guideline }: { pathway: string[];
     );
 }
 
-export default function ChatPanel({ guideline, allGuidelines, selectedPatient }: ChatPanelProps) {
+export default function ChatPanel({ guideline, allGuidelines, selectedPatient, onDiagnosisComplete }: ChatPanelProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -217,6 +218,12 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                     return;
                 }
 
+                // Acknowledge new conversation created
+                if (data.type === "new_conversation_ack") {
+                    console.log("New conversation created:", data.conversation_id);
+                    return;
+                }
+
                 // Handle assistant responses (clarification_question or final)
                 if (data.message && data.message.role === "assistant") {
                     const content = data.message.content || "";
@@ -228,15 +235,19 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                     }
 
                     let displayContent = content;
+                    const isUrgent = payload.urgent_escalation === true;
 
                     // For final recommendations, include guideline info
-                    if (payload.type === "final") {
-                        const guideline = payload.selected_guideline || "";
+                    if (payload.type === "final" && !isUrgent) {
+                        const guidelineId = payload.selected_guideline || "";
                         const citation = payload.meta?.citation || "";
-                        if (citation && !displayContent.includes(citation)) {
-                            displayContent += `\n\nThis recommendation is from NICE ${citation}.`;
-                        } else if (guideline && !displayContent.includes(guideline)) {
-                            displayContent += `\n\nBased on NICE ${guideline}.`;
+                        // Avoid "NICE NICE" duplication
+                        const cleanCitation = citation.replace(/^NICE\s+/i, "");
+                        const cleanGuideline = guidelineId.replace(/^NICE\s+/i, "");
+                        if (cleanCitation && !displayContent.includes(cleanCitation)) {
+                            displayContent += `\n\nThis recommendation is based on NICE ${cleanCitation}.`;
+                        } else if (cleanGuideline && !displayContent.includes(cleanGuideline)) {
+                            displayContent += `\n\nBased on NICE ${cleanGuideline}.`;
                         }
                     }
 
@@ -252,6 +263,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                     const assistantMsg: ChatMessage = {
                         role: "assistant",
                         content: displayContent,
+                        ...(isUrgent && { isUrgent: true }),
                         ...(payload.type === "final" && payload.pathway_walked?.length > 0 && {
                             pathwayWalked: payload.pathway_walked,
                             selectedGuideline: payload.selected_guideline,
@@ -260,20 +272,31 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                     setMessages((prev) => [...prev, assistantMsg]);
                     setIsLoading(false);
                     setStreamingMessage("");
+
+                    // Notify parent that a diagnosis completed so patient records refresh
+                    if (payload.type === "final" || isUrgent) {
+                        onDiagnosisComplete?.();
+                    }
                 }
             } catch (err) {
                 console.error("Failed to parse WebSocket message:", err);
             }
         };
 
+        // Only update wsConnected if this is still the active WebSocket
+        // Prevents race condition where old WS onclose fires after new WS onopen
         ws.onclose = () => {
-            console.log("WebSocket disconnected");
-            setWsConnected(false);
+            if (wsRef.current === ws) {
+                console.log("WebSocket disconnected");
+                setWsConnected(false);
+            }
         };
 
         ws.onerror = (err) => {
-            console.error("WebSocket error:", err);
-            setWsConnected(false);
+            if (wsRef.current === ws) {
+                console.error("WebSocket error:", err);
+                setWsConnected(false);
+            }
         };
 
         wsRef.current = ws;
@@ -392,14 +415,19 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
         }
     };
 
-    const handleNewConversation = () => {
+    const handleNewConversation = useCallback(() => {
+        // Tell backend to close current conversation so a fresh one is created
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: "new_conversation" }));
+        }
         setMessages([]);
         setInput("");
         setStreamingMessage("");
         setNodesVisited([]);
-        setSessionId(Date.now());
         initializedRef.current = false;
-    };
+        // Small delay so the backend processes the close before we reconnect
+        setTimeout(() => setSessionId(Date.now()), 150);
+    }, []);
 
     // Send via WebSocket (backend LangGraph pipeline)
     const sendViaWebSocket = (text: string) => {
@@ -565,7 +593,23 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient }:
                                                 name={message.role === "user" ? "You" : "AI"}
                                             />
                                             <MessageContent>
-                                                <Response>{displayContent}</Response>
+                                                {message.isUrgent ? (
+                                                    <div className="rounded-lg border-2 border-red-500 bg-red-50 p-4 shadow-md">
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white font-bold text-lg animate-pulse">!</span>
+                                                            <span className="text-red-800 font-bold text-base uppercase tracking-wide">Urgent Clinical Alert</span>
+                                                        </div>
+                                                        <div className="text-red-900 text-sm font-medium leading-relaxed">
+                                                            <Response>{displayContent}</Response>
+                                                        </div>
+                                                        <div className="mt-3 pt-3 border-t border-red-200 flex items-center gap-2">
+                                                            <span className="inline-block w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                                                            <span className="text-xs font-semibold text-red-700 uppercase tracking-wider">Immediate action required</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <Response>{displayContent}</Response>
+                                                )}
                                                 {/* Backend pipeline pathway viewer */}
                                                 {message.pathwayWalked && message.pathwayWalked.length > 0 && (
                                                     <PathwayViewer

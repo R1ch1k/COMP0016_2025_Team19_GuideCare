@@ -63,7 +63,11 @@ async def websocket_chat(websocket: WebSocket, patient_id: UUID):
             data = await websocket.receive_json()
             await manager.handle_incoming_message(str(patient_id), data)
     except WebSocketDisconnect:
-        await manager.disconnect(str(patient_id), websocket)
+        pass
+    except RuntimeError:
+        # Happens when the client closes mid-receive (e.g. New Conversation reconnect)
+        pass
     except Exception as e:
         logger.exception("WebSocket error: %s", e)
+    finally:
         await manager.disconnect(str(patient_id), websocket)

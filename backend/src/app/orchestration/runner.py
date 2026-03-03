@@ -66,6 +66,7 @@ async def process_user_turn(
             "extracted_variables": state.get("extracted_variables") or {},
             "pathway_walked": state.get("pathway_walked") or [],
             "nodes_visited": nodes_visited,
+            "urgent_escalation": bool(state.get("urgent_escalation")),
             "status": "completed",
         }
 
