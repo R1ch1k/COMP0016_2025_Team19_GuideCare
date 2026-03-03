@@ -270,8 +270,10 @@ def evaluate_single_condition(condition_spec, variables):
             return True
         if all(r is None for r in results):
             return None
-        if any(r is None for r in results):
-            return None
+        # If at least one condition evaluated to False and none to True,
+        # treat the OR as False.  This handles clinical scoring ORs where
+        # only one scoring system is used (e.g. FeverPAIN provided but
+        # Centor missing — if FeverPAIN doesn't match, the answer is No).
         return False
 
     # Treatment type map (NG222)

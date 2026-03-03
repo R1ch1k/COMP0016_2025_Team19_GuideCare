@@ -50,19 +50,7 @@
       }
     ]
   },
-  "n7": {
-    "variable": "no_antibiotic_given"
-  },
-  "n9": {
-    "variable": "back_up_antibiotic_prescription_given"
-  },
-  "n11": {
-    "variable": "immediate_antibiotic_prescription_given"
-  },
-  "n13": {
-    "variable": "reassessment_needed_due_to_worsening_symptoms"
-  },
-  "n15": {
+  "n10": {
     "type": "or",
     "conditions": [
       {
@@ -76,13 +64,7 @@
       }
     ]
   },
-  "n17": {
+  "n12": {
     "variable": "severe_systemic_infection_or_severe_complications"
-  },
-  "n22": {
-    "variable": "calculate_feverpain_score"
-  },
-  "n23": {
-    "variable": "calculate_centor_score"
   }
 }
