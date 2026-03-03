@@ -204,7 +204,15 @@ class TestTraverseGraph:
         assert data is not None
         g = data["guideline"]
         e = data["merged_evaluator"]
-        variables = {"feverpain_score": 4, "systemically_very_unwell": False}
+        # Must provide all variables needed to reach the scoring path:
+        # n12 (severe?) → no → n10 (high risk?) → no → n1 → n3 → n5
+        variables = {
+            "feverpain_score": 4,
+            "severe_systemic_infection_or_severe_complications": False,
+            "systemically_very_unwell": False,
+            "signs_of_serious_illness_condition": False,
+            "high_risk_of_complications": False,
+        }
         result = traverse_guideline_graph(g["nodes"], g["edges"], e, variables)
         assert len(result["reached_actions"]) > 0
         assert any("antibiotic" in a.lower() or "paracetamol" in a.lower()

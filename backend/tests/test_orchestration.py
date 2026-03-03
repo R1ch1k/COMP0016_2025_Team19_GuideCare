@@ -136,7 +136,8 @@ class TestTriageRouting:
         assert state.get("urgent_escalation") is not True
         assert state.get("selected_guideline") == "NG84"
         assert state.get("final_recommendation")
-        assert "NG84" in state.get("final_recommendation", "")
+        # Citation should reference the guideline
+        assert state.get("citation") == "NG84"
 
 
 class TestClarification:
