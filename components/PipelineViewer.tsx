@@ -9,20 +9,47 @@ import { ChevronDown, ChevronUp } from "lucide-react";
  */
 const PIPELINE_NODES = [
     { id: "load_patient", label: "Load Patient", description: "Fetch patient record from DB" },
-    { id: "triage", label: "Triage", description: "LLM urgency assessment + guideline selection" },
-    { id: "clarify", label: "Clarify", description: "Generate clarification questions if needed" },
+    { id: "triage", label: "Triage", description: "LLM urgency assessment" },
     { id: "select_guideline", label: "Select Guideline", description: "Choose NICE guideline" },
+    { id: "clarify", label: "Clarify", description: "Ask guideline-specific questions" },
     { id: "extract_variables", label: "Extract Variables", description: "LLM + regex variable extraction" },
     { id: "walk_graph", label: "Walk Graph", description: "BFS traversal of decision tree" },
     { id: "format_output", label: "Format Output", description: "Template-based recommendation" },
 ];
 
+interface PipelineMeta {
+    selectedGuideline?: string;
+    urgency?: string;
+    extractedVarCount?: number;
+}
+
 interface PipelineViewerProps {
     nodesVisited: string[];
     isProcessing?: boolean;
+    meta?: PipelineMeta;
 }
 
-export default function PipelineViewer({ nodesVisited, isProcessing }: PipelineViewerProps) {
+/** Build a dynamic label for a node based on pipeline metadata. */
+function getDynamicLabel(nodeId: string, defaultLabel: string, isVisited: boolean, meta: PipelineMeta): { label: string; detail?: string } {
+    if (!isVisited) return { label: defaultLabel };
+
+    switch (nodeId) {
+        case "select_guideline":
+            if (meta.selectedGuideline) {
+                return { label: "Guideline", detail: meta.selectedGuideline };
+            }
+            return { label: defaultLabel };
+        case "extract_variables":
+            if (meta.extractedVarCount && meta.extractedVarCount > 0) {
+                return { label: "Variables", detail: `${meta.extractedVarCount} extracted` };
+            }
+            return { label: defaultLabel };
+        default:
+            return { label: defaultLabel };
+    }
+}
+
+export default function PipelineViewer({ nodesVisited, isProcessing, meta = {} }: PipelineViewerProps) {
     const [expanded, setExpanded] = useState(true);
 
     const visitedSet = new Set(nodesVisited);
@@ -56,6 +83,7 @@ export default function PipelineViewer({ nodesVisited, isProcessing }: PipelineV
                             const isVisited = visitedSet.has(node.id);
                             const isActive = node.id === activeNode;
                             const isLast = i === PIPELINE_NODES.length - 1;
+                            const { label, detail } = getDynamicLabel(node.id, node.label, isVisited, meta);
 
                             let dotColor = "bg-gray-300";
                             let textColor = "text-gray-400";
@@ -79,10 +107,15 @@ export default function PipelineViewer({ nodesVisited, isProcessing }: PipelineV
                                         {!isLast && <div className={`w-px flex-1 min-h-[14px] ${lineColor} transition-colors`} />}
                                     </div>
                                     {/* Label */}
-                                    <div className="pb-1 min-w-0">
+                                    <div className="pb-1 min-w-0 flex items-baseline gap-1">
                                         <span className={`text-[11px] leading-tight ${textColor} transition-colors`}>
-                                            {node.label}
+                                            {label}
                                         </span>
+                                        {detail && (
+                                            <span className="text-[10px] text-emerald-600 font-medium truncate">
+                                                {detail}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             );

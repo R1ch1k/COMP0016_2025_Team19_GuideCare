@@ -143,6 +143,11 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
     const [wsConnected, setWsConnected] = useState(false);
     const [backendPatientId, setBackendPatientId] = useState<string | null>(null);
     const [nodesVisited, setNodesVisited] = useState<string[]>([]);
+    const [pipelineMeta, setPipelineMeta] = useState<{
+        selectedGuideline?: string;
+        urgency?: string;
+        extractedVarCount?: number;
+    }>({});
     const wsRef = useRef<WebSocket | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const initializedRef = useRef(false);
@@ -233,6 +238,14 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                     if (payload.nodes_visited && Array.isArray(payload.nodes_visited)) {
                         setNodesVisited(payload.nodes_visited);
                     }
+
+                    // Update pipeline metadata for dynamic labels
+                    setPipelineMeta(prev => ({
+                        ...prev,
+                        ...(payload.selected_guideline && { selectedGuideline: payload.selected_guideline }),
+                        ...(payload.urgent_escalation !== undefined && { urgency: payload.urgent_escalation ? "emergency" : (payload.triage_urgency || prev.urgency) }),
+                        ...(payload.extracted_variables && { extractedVarCount: Object.keys(payload.extracted_variables).length }),
+                    }));
 
                     let displayContent = content;
                     const isUrgent = payload.urgent_escalation === true;
@@ -424,6 +437,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
         setInput("");
         setStreamingMessage("");
         setNodesVisited([]);
+        setPipelineMeta({});
         initializedRef.current = false;
         // Small delay so the backend processes the close before we reconnect
         setTimeout(() => setSessionId(Date.now()), 150);
@@ -683,7 +697,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                             </div>
                             {connectionStatus === "pipeline" && (
                                 <div className="w-48">
-                                    <PipelineViewer nodesVisited={nodesVisited} isProcessing={isLoading} />
+                                    <PipelineViewer nodesVisited={nodesVisited} isProcessing={isLoading} meta={pipelineMeta} />
                                 </div>
                             )}
                         </div>
