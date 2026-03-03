@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guidecare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -28,12 +33,26 @@ services:
       - LANGGRAPH_WORKFLOW_ID=
       - CORS_ORIGINS=http://localhost:3000
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8000:8000"
     volumes:
       - ./backend/src:/app/src
       - ./backend/data:/app/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+    environment:
+      - TEAM_PASSWORD=${TEAM_PASSWORD:-changeme123}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
 
 volumes:
   pgdata:

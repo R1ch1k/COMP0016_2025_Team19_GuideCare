@@ -70,7 +70,6 @@ The triage step performs a structured urgency assessment with clinical red flags
 ### Prerequisites
 
 - Docker and Docker Compose
-- Node.js 18+
 - An OpenAI API key
 
 ### 1. Clone and configure
@@ -80,44 +79,45 @@ git clone https://github.com/R1ch1k/guide-care.git
 cd guide-care
 ```
 
-Create the backend environment file:
+Create your environment file:
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
-Edit `backend/.env` and set your `OPENAI_API_KEY`.
+Edit `.env` and set your `OPENAI_API_KEY`. Optionally change `TEAM_PASSWORD` for the login screen.
 
-### 2. Start the backend (Docker)
+### 2. Start everything (one command)
 
 ```bash
 docker-compose up --build
 ```
 
-This starts:
-- **PostgreSQL** on port 5432 (database: `guidecare`, user: `guidecare`, password: `guidecare`)
-- **FastAPI backend** on port 8000
+This starts all three services:
+- **PostgreSQL** on port 5432 (database auto-configured)
+- **FastAPI backend** on port 8000 (creates tables and seeds sample patients on first run)
+- **Next.js frontend** on port 3000
 
-On first startup, the backend creates all database tables and seeds sample patients.
-
-API documentation is available at http://localhost:8000/docs.
+Open http://localhost:3000 in your browser. API docs at http://localhost:8000/docs.
 
 To stop:
 
 ```bash
-docker-compose down          # Stop containers (keeps data)
+docker-compose down          # Stop containers (keeps database)
 docker-compose down -v       # Stop and delete database volume
 ```
 
 To rebuild after code changes:
 
 ```bash
-docker-compose up --build    # Rebuilds the backend image
+docker-compose up --build
 ```
 
-### 2b. Start the backend (without Docker)
+### Alternative: Run without Docker
 
-If you prefer running without Docker, you need a PostgreSQL instance running separately:
+If you prefer running services manually (requires Node.js 18+ and PostgreSQL):
+
+**Backend:**
 
 ```bash
 cd backend
@@ -131,7 +131,7 @@ cd src
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Start the frontend
+**Frontend:**
 
 ```bash
 npm install
@@ -140,7 +140,7 @@ npm run dev
 
 Open http://localhost:3000 in your browser.
 
-### 4. Use the application
+### 3. Use the application
 
 1. Select a patient from the sidebar (or import your own via the **Connect** button)
 2. Describe symptoms in the chat (e.g. "patient has a sore throat, 38.5C fever, no cough")
@@ -177,7 +177,7 @@ Upload a `.xlsx` file with the same column headers in the first row.
 
 ### GPT-4o via OpenAI API (default)
 
-The backend uses the OpenAI API (`gpt-4o` by default) for all LLM operations: triage, variable extraction, clarification generation, and guideline selection fallback. Set your key in `backend/.env`:
+The backend uses the OpenAI API (`gpt-4o` by default) for all LLM operations: triage, variable extraction, clarification generation, and guideline selection fallback. Set your key in `.env` (root):
 
 ```bash
 OPENAI_API_KEY=sk-proj-your-key-here
@@ -304,7 +304,7 @@ guide-care/
 │   │       ├── crud.py         # Database CRUD operations
 │   │       ├── seed.py         # Sample patient data seeder
 │   │       └── ws_manager.py   # WebSocket manager + diagnosis auto-persist
-│   ├── tests/                  # Backend test suite (146 tests)
+│   ├── tests/                  # Backend test suite (147 tests)
 │   │   ├── conftest.py             # Fixtures: in-memory SQLite, async client
 │   │   ├── test_guideline_engine.py # 79 unit tests for engine functions
 │   │   ├── test_pipeline_e2e.py    # 35 E2E tests across all 10 guidelines
@@ -317,13 +317,15 @@ guide-care/
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
 │   └── .env.example
-├── docker-compose.yml
+├── Dockerfile                 # Frontend Docker image
+├── docker-compose.yml         # One-command startup (postgres + backend + frontend)
+├── .env.example               # Environment template for Docker
 └── package.json
 ```
 
 ## Testing
 
-### Backend Tests (146 tests)
+### Backend Tests (147 tests)
 
 ```bash
 cd backend
@@ -378,7 +380,20 @@ The in-app pipeline viewer in the chat UI also shows which nodes were visited fo
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+When using Docker, all variables are set in the root `.env` file (copied from `.env.example`). Docker Compose passes them to each service automatically.
+
+### Root (`.env`) — used by Docker Compose
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| OPENAI_API_KEY | Yes | — | OpenAI API key for LLM features |
+| OPENAI_MODEL | No | gpt-4o | OpenAI model to use |
+| TEAM_PASSWORD | No | changeme123 | Login password for the frontend |
+| LLM_MODE | No | api | `api` for OpenAI, `local` for local model |
+| LOCAL_MODEL_URL | No | — | OpenAI-compatible endpoint for local model |
+| LOCAL_MODEL_NAME | No | gpt-oss-20b | Local model name |
+
+### Backend (`backend/.env`) — used without Docker
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -387,14 +402,13 @@ The in-app pipeline viewer in the chat UI also shows which nodes were visited fo
 | OPENAI_MODEL | No | gpt-4o | OpenAI model to use |
 | CORS_ORIGINS | No | * | Comma-separated allowed origins |
 | LLM_MODE | No | api | `api` for OpenAI, `local` for local model |
-| LOCAL_MODEL_URL | No | — | OpenAI-compatible endpoint for local model |
-| LOCAL_MODEL_NAME | No | gpt-oss-20b | Local model name |
 
-### Frontend (`.env.local`)
+### Frontend (`.env.local`) — used without Docker
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | NEXT_PUBLIC_BACKEND_URL | No | Backend URL (defaults to http://localhost:8000) |
+| TEAM_PASSWORD | No | Login password (defaults to changeme123) |
 
 ## Safety Notice
 
