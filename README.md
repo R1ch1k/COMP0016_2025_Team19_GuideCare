@@ -458,6 +458,25 @@ When using Docker, all variables are set in the root `.env` file (copied from `.
 | NEXT_PUBLIC_BACKEND_URL | No | Backend URL (defaults to http://localhost:8000) |
 | TEAM_PASSWORD | No | Login password (defaults to changeme123) |
 
+## Patient Data Privacy
+
+The system is designed to minimise patient data exposure to external LLM services:
+
+**What is sent to the LLM (GPT-4o or local model):**
+- Age, gender, medical conditions, current medications, allergies
+- Symptoms described in the chat conversation
+- Extracted clinical variables (e.g. blood pressure readings, fever temperature)
+
+**What is NEVER sent to the LLM:**
+- Patient name (first or last)
+- NHS number
+- Date of birth
+- Full clinical notes or doctor's notes
+
+PII fields are loaded from the database for display in the frontend UI only. The LLM prompts in `backend/src/app/llm.py` and `backend/src/app/orchestration/deps.py` are constructed using only clinically relevant, de-identified data.
+
+For deployments where no patient data should leave the network, set `LLM_MODE=local` to route LLM calls to a self-hosted model (see [Switching between GPT-4o API and a local model](#switching-between-gpt-4o-api-and-a-local-model)). Note that triage still uses the OpenAI API in local mode — for fully offline operation, a TRIAGE_API_URL can be configured to point to a local triage service.
+
 ## Safety Notice
 
 This tool is for healthcare professionals only and does not replace clinical judgment. Always consider individual patient context, contraindications, and local protocols. All recommendations cite the source NICE guideline.

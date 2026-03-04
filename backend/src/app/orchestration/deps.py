@@ -51,7 +51,13 @@ class OrchestrationDeps(TypedDict):
 
 
 async def fetch_patient(patient_id: str) -> Dict[str, Any]:
-    """Load a patient record from DB as a plain dict."""
+    """Load a patient record from DB as a plain dict.
+
+    PII fields (nhs_number, first_name, last_name) are loaded for display
+    in the frontend but are NEVER included in LLM prompts. Only clinically
+    relevant fields (age, gender, conditions, medications, allergies) are
+    sent to the LLM for triage, extraction, and clarification.
+    """
     pid = UUID(patient_id)
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(Patient).where(Patient.id == pid))
@@ -1260,11 +1266,10 @@ async def format_output_20b(
             "citation": guideline,
         }
 
-    # Fallback: LLM-based formatting
+    # Fallback: LLM-based formatting (no PII sent — use "the patient" not name)
     if settings.OPENAI_API_KEY:
         try:
-            name = patient.get("first_name", "the patient")
-            prompt = f"""Provide a concise clinical recommendation for {name} based on
+            prompt = f"""Provide a concise clinical recommendation for the patient based on
 guideline {guideline}. Known variables: {json.dumps(variables)}.
 Keep it under 3 sentences and professional. Do not start with 'Based on NICE'."""
 
