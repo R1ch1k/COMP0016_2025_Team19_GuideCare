@@ -256,9 +256,9 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                         const cleanCitation = citation.replace(/^NICE\s+/i, "");
                         const cleanGuideline = guidelineId.replace(/^NICE\s+/i, "");
                         if (cleanCitation && !displayContent.includes(cleanCitation)) {
-                            displayContent += `\n\nThis recommendation is based on NICE ${cleanCitation}.`;
+                            displayContent += `\n\n*This recommendation is based on NICE ${cleanCitation}.*`;
                         } else if (cleanGuideline && !displayContent.includes(cleanGuideline)) {
-                            displayContent += `\n\nBased on NICE ${cleanGuideline}.`;
+                            displayContent += `\n\n*Based on NICE ${cleanGuideline}.*`;
                         }
                     }
 
