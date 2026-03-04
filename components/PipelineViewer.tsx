@@ -129,12 +129,12 @@ export default function PipelineViewer({ nodesVisited, isProcessing, meta = {} }
                                         {!isLast && <div className={`w-px flex-1 min-h-[14px] ${lineColor} transition-colors`} />}
                                     </div>
                                     {/* Label */}
-                                    <div className="pb-1 min-w-0 flex items-baseline gap-1">
+                                    <div className="pb-1 min-w-0 flex flex-wrap items-baseline gap-x-1">
                                         <span className={`text-[11px] leading-tight ${textColor} transition-colors`}>
                                             {label}
                                         </span>
                                         {detail && (
-                                            <span className="text-[10px] text-emerald-600 font-medium truncate">
+                                            <span className="text-[10px] text-emerald-600 font-medium">
                                                 {detail}
                                             </span>
                                         )}
