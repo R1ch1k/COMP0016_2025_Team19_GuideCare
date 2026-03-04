@@ -114,7 +114,7 @@ export default function Home() {
                     ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(p.updated_at))
                     : formatLastUpdated(),
                 clinician: "Assigned clinician",
-                notes: p.clinical_notes?.[0]?.note || (p.clinical_notes?.[0]?.recommendation ? p.clinical_notes[0].recommendation.slice(0, 100) + "..." : undefined),
+                notes: (p.clinical_notes || []).filter((n: Record<string, string>) => n.note && !n.recommendation).map((n: Record<string, string>) => n.note).join("\n") || undefined,
                 conditions: p.conditions,
                 medications: p.medications,
                 allergies: p.allergies,

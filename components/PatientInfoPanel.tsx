@@ -178,8 +178,7 @@ export default function PatientInfoPanel({
       (selectedPatient.medications || []).map((m) => (m.dose ? `${m.name} (${m.dose})` : m.name)).join(", ")
     );
     setEditAllergies((selectedPatient.allergies || []).join(", "));
-    const latestNote = (selectedPatient.clinicalNotes || []).map((n) => n.recommendation || (n as Record<string, string>).note || "").filter(Boolean).join("\n");
-    setEditNotes(latestNote);
+    setEditNotes(selectedPatient.notes || "");
     setIsEditing(true);
   }
 
@@ -401,9 +400,9 @@ export default function PatientInfoPanel({
                       <textarea
                         value={editNotes}
                         onChange={(e) => setEditNotes(e.target.value)}
-                        rows={2}
-                        placeholder="Key considerations, follow-up plans..."
-                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        rows={4}
+                        placeholder="Special conditions, follow-up plans, key observations..."
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y"
                       />
                     </div>
                     <p className="text-[10px] text-gray-400">Separate items with commas. For medications with doses, use format: Name (Dose)</p>
