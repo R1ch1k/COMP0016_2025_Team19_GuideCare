@@ -142,6 +142,7 @@ export default function PatientInfoPanel({
   const [editConditions, setEditConditions] = useState("");
   const [editMedications, setEditMedications] = useState("");
   const [editAllergies, setEditAllergies] = useState("");
+  const [editNotes, setEditNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedPatient = records.find((r) => r.id === selectedPatientId);
@@ -177,6 +178,8 @@ export default function PatientInfoPanel({
       (selectedPatient.medications || []).map((m) => (m.dose ? `${m.name} (${m.dose})` : m.name)).join(", ")
     );
     setEditAllergies((selectedPatient.allergies || []).join(", "));
+    const latestNote = (selectedPatient.clinicalNotes || []).map((n) => n.recommendation || (n as Record<string, string>).note || "").filter(Boolean).join("\n");
+    setEditNotes(latestNote);
     setIsEditing(true);
   }
 
@@ -192,11 +195,15 @@ export default function PatientInfoPanel({
       }).filter((m) => m.name);
       const allergies = editAllergies.split(",").map((s) => s.trim()).filter(Boolean);
 
+      const clinical_notes = editNotes.trim()
+        ? [{ note: editNotes.trim(), date: new Date().toISOString().split("T")[0] }]
+        : undefined;
+
       const patientId = selectedPatient.backendId || selectedPatient.id;
       const res = await fetch(`${BACKEND_HTTP_URL}/patients/${patientId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conditions, medications, allergies }),
+        body: JSON.stringify({ conditions, medications, allergies, ...(clinical_notes && { clinical_notes }) }),
       });
 
       if (res.ok) {
@@ -206,6 +213,7 @@ export default function PatientInfoPanel({
           medications,
           allergies,
           primaryConcern: conditions[0] || selectedPatient.primaryConcern,
+          notes: editNotes.trim() || selectedPatient.notes,
         };
         onUpdatePatient?.(updated);
         setIsEditing(false);
@@ -388,6 +396,16 @@ export default function PatientInfoPanel({
                         className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Doctor&apos;s Notes</label>
+                      <textarea
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        rows={2}
+                        placeholder="Key considerations, follow-up plans..."
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      />
+                    </div>
                     <p className="text-[10px] text-gray-400">Separate items with commas. For medications with doses, use format: Name (Dose)</p>
                     <div className="flex gap-2">
                       <button
@@ -446,6 +464,15 @@ export default function PatientInfoPanel({
                             </span>
                           ))}
                         </div>
+                      </div>
+                    )}
+                    {/* Doctor's Notes */}
+                    {selectedPatient.notes && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Doctor&apos;s Notes</p>
+                        <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {selectedPatient.notes}
+                        </p>
                       </div>
                     )}
                   </>
