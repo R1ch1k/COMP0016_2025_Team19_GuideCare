@@ -950,9 +950,13 @@ JSON:
         if var in all_vars and var not in extracted:
             extracted[var] = False
 
-    # Infer not_black_african_caribbean: default to True unless record says otherwise
+    # Infer not_black_african_caribbean from patient record ethnicity if available,
+    # otherwise leave as None so the clarification system asks the user
     if "not_black_african_caribbean" in all_vars and "not_black_african_caribbean" not in extracted:
-        extracted["not_black_african_caribbean"] = True
+        ethnicity = (patient.get("ethnicity") or "").lower()
+        if ethnicity:
+            is_black = any(k in ethnicity for k in ("black", "african", "caribbean"))
+            extracted["not_black_african_caribbean"] = not is_black
 
     # Infer no_epilepsy_history: default True unless patient has epilepsy
     if "no_epilepsy_history" in all_vars and "no_epilepsy_history" not in extracted:
@@ -1018,6 +1022,15 @@ JSON:
         "abpm_accepted", "abpm_done",  # aliases (mapped above but just in case)
     }
     for var in _clinician_action_vars:
+        if var in extracted and var not in clarification_var_names:
+            del extracted[var]
+
+    # Ethnicity-based variables — the LLM must NOT guess these from context.
+    # They should only come from: (1) patient record, (2) clarification answer.
+    # The LLM frequently defaults not_black_african_caribbean to True, skipping
+    # the ethnicity question entirely.
+    _ethnicity_vars = {"not_black_african_caribbean"}
+    for var in _ethnicity_vars:
         if var in extracted and var not in clarification_var_names:
             del extracted[var]
 
@@ -1189,13 +1202,11 @@ async def walk_guideline_graph_fn(
     walked = [f"{p[0]}({p[2]})" for p in result["path"]]
     last_node = result["path"][-1][0] if result["path"] else (current_node or "start")
 
-    # Always terminal after one traversal — re-walking without new variables
-    # would produce the same result and cause an infinite loop.
-    # format_output handles both complete and partial results.
+    has_missing = bool(result["missing_variables"])
     return {
         "current_node": last_node,
         "pathway_walked": walked,
-        "terminal": True,
+        "terminal": not has_missing,
         "reached_actions": result["reached_actions"],
         "missing_variables": result["missing_variables"],
     }

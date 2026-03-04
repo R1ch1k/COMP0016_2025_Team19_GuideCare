@@ -10,6 +10,28 @@ function isNICEGuideline(g: AnyGuideline): g is NICEGuideline {
   return "rules" in g && "edges" in g;
 }
 
+const GUIDELINE_NAMES: Record<string, string> = {
+  NG84: "Sore Throat",
+  NG91: "Otitis Media",
+  NG112: "Urinary Tract Infection",
+  NG133: "Hypertension in Pregnancy",
+  NG136: "Hypertension",
+  NG184: "Animal & Human Bites",
+  NG222: "Depression",
+  NG232: "Head Injury",
+  NG81_GLAUCOMA: "Chronic Glaucoma",
+  NG81_HYPERTENSION: "Ocular Hypertension",
+};
+
+function getGuidelineDisplayName(id: string | null): string {
+  if (!id) return "Unknown guideline";
+  const upper = id.toUpperCase();
+  for (const [key, name] of Object.entries(GUIDELINE_NAMES)) {
+    if (upper.includes(key)) return `${name}`;
+  }
+  return id;
+}
+
 function parsePathwayStep(step: string): { nodeId: string; decision: string; isAction: boolean } {
   const match = step.match(/^(n\d+)\((.+)\)$/);
   if (!match) return { nodeId: step, decision: "", isAction: false };
@@ -340,7 +362,7 @@ export default function PatientInfoPanel({
                                 </span>
                               )}
                               <span className="text-[11px] font-medium text-gray-900 truncate">
-                                {d.selected_guideline || "Unknown guideline"}
+                                {getGuidelineDisplayName(d.selected_guideline)}
                               </span>
                             </div>
                             <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">

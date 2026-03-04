@@ -17,6 +17,28 @@ const PIPELINE_NODES = [
     { id: "format_output", label: "Format Output", description: "Template-based recommendation" },
 ];
 
+/** Map short guideline IDs to human-readable names. */
+const GUIDELINE_NAMES: Record<string, string> = {
+    NG84: "Sore Throat",
+    NG91: "Otitis Media",
+    NG112: "Urinary Tract Infection",
+    NG133: "Hypertension in Pregnancy",
+    NG136: "Hypertension",
+    NG184: "Animal & Human Bites",
+    NG222: "Depression",
+    NG232: "Head Injury",
+    NG81_GLAUCOMA: "Chronic Glaucoma",
+    NG81_HYPERTENSION: "Ocular Hypertension",
+};
+
+function getGuidelineDisplayName(id: string): string {
+    const upper = id.toUpperCase();
+    for (const [key, name] of Object.entries(GUIDELINE_NAMES)) {
+        if (upper.includes(key)) return `${key} (${name})`;
+    }
+    return id;
+}
+
 interface PipelineMeta {
     selectedGuideline?: string;
     urgency?: string;
@@ -36,7 +58,7 @@ function getDynamicLabel(nodeId: string, defaultLabel: string, isVisited: boolea
     switch (nodeId) {
         case "select_guideline":
             if (meta.selectedGuideline) {
-                return { label: "Guideline", detail: meta.selectedGuideline };
+                return { label: "Guideline", detail: getGuidelineDisplayName(meta.selectedGuideline) };
             }
             return { label: defaultLabel };
         case "extract_variables":
@@ -69,7 +91,7 @@ export default function PipelineViewer({ nodesVisited, isProcessing, meta = {} }
                     Pipeline
                     {nodesVisited.length > 0 && (
                         <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded">
-                            {nodesVisited.length}/{PIPELINE_NODES.length}
+                            {visitedSet.size}/{PIPELINE_NODES.length}
                         </span>
                     )}
                 </span>

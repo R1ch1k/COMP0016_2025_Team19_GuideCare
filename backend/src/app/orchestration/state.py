@@ -36,6 +36,7 @@ class ConversationState(TypedDict, total=False):
     terminal: bool
     reached_actions: List[str]
     missing_variables: List[str]
+    _walk_graph_count: int  # prevents infinite clarify→walk loops
 
     # output
     final_recommendation: str

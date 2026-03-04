@@ -92,10 +92,12 @@ def load_all_guidelines() -> Dict[str, Dict[str, Any]]:
                 else:
                     merged[key] = val
 
+        effective_eval = merged if merged else evaluator
         data[gid] = {
             "guideline": guideline,
             "evaluator": evaluator,
-            "merged_evaluator": merged if merged else evaluator,
+            "merged_evaluator": effective_eval,
+            "all_vars": set(get_all_variables_from_evaluator(effective_eval)),
         }
 
     node_count = sum(

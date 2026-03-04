@@ -215,6 +215,9 @@ def build_graph(deps):
             retries=settings.AI_RETRIES,
         )
 
+        # Track walk count to prevent infinite clarify→walk loops
+        out["_walk_graph_count"] = (state.get("_walk_graph_count") or 0) + 1
+
         log_step(cid, "walk_graph_done", terminal=out.get("terminal", False))
         return out
 
@@ -280,6 +283,20 @@ def build_graph(deps):
             return "clarify"
         return "extract_variables"
 
+    def after_walk_graph(state: ConversationState) -> str:
+        # If graph traversal hit missing variables, loop back to clarify
+        # so the system can ask the user about them.
+        # Only retry once to prevent infinite loops if clarification can't
+        # resolve the missing data.
+        missing = state.get("missing_variables") or []
+        walk_count = state.get("_walk_graph_count") or 1
+        log_step(state.get("conversation_id", "?"), "after_walk_graph",
+                 missing=missing, walk_count=walk_count,
+                 decision="clarify" if (missing and walk_count <= 1) else "format_output")
+        if missing and walk_count <= 1:
+            return "clarify"
+        return "format_output"
+
     # ---- build graph ----
 
     sg = StateGraph(ConversationState)
@@ -302,7 +319,11 @@ def build_graph(deps):
         {"clarify": "clarify", "extract_variables": "extract_variables", "end": END},
     )
     sg.add_edge("extract_variables", "walk_graph")
-    sg.add_edge("walk_graph", "format_output")
+    sg.add_conditional_edges(
+        "walk_graph",
+        after_walk_graph,
+        {"clarify": "clarify", "format_output": "format_output"},
+    )
     sg.add_edge("format_output", END)
 
     return sg.compile(checkpointer=MemorySaver())
