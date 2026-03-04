@@ -200,7 +200,6 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
         const ws = new WebSocket(`${BACKEND_WS_URL}/ws/chat/${patientId}`);
 
         ws.onopen = () => {
-            console.log("WebSocket connected to backend for patient", patientId);
             setWsConnected(true);
         };
 
@@ -225,7 +224,6 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
 
                 // Acknowledge new conversation created
                 if (data.type === "new_conversation_ack") {
-                    console.log("New conversation created:", data.conversation_id);
                     return;
                 }
 
@@ -300,7 +298,6 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
         // Prevents race condition where old WS onclose fires after new WS onopen
         ws.onclose = () => {
             if (wsRef.current === ws) {
-                console.log("WebSocket disconnected");
                 setWsConnected(false);
             }
         };

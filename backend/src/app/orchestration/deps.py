@@ -1144,7 +1144,7 @@ JSON:
                             extracted[var_name] = a_str
                     break
 
-    logger.info("Final extracted variables: %s", {k: v for k, v in extracted.items() if v is not None})
+    logger.debug("Final extracted variables: %s", {k: v for k, v in extracted.items() if v is not None})
     return extracted
 
 
