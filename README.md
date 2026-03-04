@@ -192,26 +192,106 @@ environment:
   - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
 ```
 
-### Using a local model (for research / offline use)
+### Switching between GPT-4o API and a local model
 
-The backend supports running with a local OpenAI-compatible model server for privacy-sensitive deployments where data must not leave the network.
+The backend has a unified `generate()` function in `backend/src/app/llm.py` that routes all LLM calls based on a single environment variable: **`LLM_MODE`**.
 
-The `docker-compose.yml` includes environment variables for a local model:
+| `LLM_MODE` | Behaviour | When to use |
+|-------------|-----------|-------------|
+| `api` (default) | All LLM calls go to the OpenAI API (GPT-4o) | Standard deployment, best accuracy |
+| `local` | Most LLM calls go to a self-hosted model server; **triage always uses the OpenAI API** for reliable urgency classification | Privacy-sensitive / offline / research deployments |
+
+#### How it works under the hood
+
+- `generate()` — used for clarification, variable extraction, guideline selection, and recommendation formatting. Routes to OpenAI or local based on `LLM_MODE`.
+- `generate_api_only()` — used **only** for triage (urgency assessment). Always calls the OpenAI API regardless of `LLM_MODE`, because emergency detection must remain highly reliable.
+
+This means even in `local` mode, you still need a valid `OPENAI_API_KEY` for the triage step.
+
+#### To switch to a local model
+
+1. **Set up a local model server** running an OpenAI-compatible API (must expose `/v1/chat/completions`):
+   - [vLLM](https://docs.vllm.ai/) — recommended for GPU inference
+   - [text-generation-inference](https://huggingface.co/docs/text-generation-inference) — Hugging Face's inference server
+   - [Ollama](https://ollama.ai/) — easiest setup for local development
+
+2. **Change one variable** in your `.env` (root for Docker, `backend/.env` without Docker):
+
+   ```bash
+   LLM_MODE=local                                    # Switch from "api" to "local"
+   LOCAL_MODEL_URL=http://localhost:8080/v1           # Your model server's URL
+   LOCAL_MODEL_NAME=gpt-oss-20b                      # Model name your server expects
+   OPENAI_API_KEY=sk-proj-your-key-here              # Still needed for triage
+   ```
+
+3. **Restart the backend** — no code changes needed:
+
+   ```bash
+   # With Docker
+   docker-compose up --build
+
+   # Without Docker
+   cd backend/src && uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+#### Docker Compose configuration
+
+The `docker-compose.yml` already passes these through as environment variables:
 
 ```yaml
 environment:
-  - LLM_MODE=${LLM_MODE:-api}                    # Set to "local" for local model
+  - LLM_MODE=${LLM_MODE:-api}
   - LOCAL_MODEL_URL=${LOCAL_MODEL_URL:-http://host.docker.internal:8080/v1}
   - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-gpt-oss-20b}
 ```
 
-To use a local model with the backend:
-1. Host gpt-oss-20b (or any OpenAI-compatible model) on a GPU server with an OpenAI-compatible API endpoint (e.g. vLLM, text-generation-inference)
-2. Set `LLM_MODE=local` in your `.env`
-3. Set `LOCAL_MODEL_URL` to your model's API endpoint
-4. The backend's `app/llm.py` will route requests to the local endpoint instead of OpenAI
+When running inside Docker, `host.docker.internal` lets the container reach a model server running on your host machine.
 
-**Note:** A local model is viable for privacy-sensitive deployments where data must not leave the network.
+#### Local model options
+
+The system is designed and tested around **gpt-oss-20b**, a 20-billion parameter open-source model fine-tuned for instruction following. However, any OpenAI-compatible model can be used — just change `LOCAL_MODEL_NAME` in your `.env` to match.
+
+| Model | Parameters | VRAM Required | Notes |
+|-------|-----------|---------------|-------|
+| **gpt-oss-20b** (default) | 20B | ~40 GB (A100) | The model the pipeline prompts are tuned for |
+| Mistral-7B-Instruct | 7B | ~16 GB (T4/A10) | Lighter alternative, good general instruction following |
+| Llama-3-8B-Instruct | 8B | ~16 GB | Meta's open model, strong reasoning |
+| Mixtral-8x7B-Instruct | 47B (MoE) | ~90 GB (2×A100) | Mixture-of-experts, high quality but heavier |
+
+#### Downloading and serving a local model
+
+Models are downloaded from [Hugging Face](https://huggingface.co/models). vLLM handles the download automatically on first run:
+
+```bash
+# Install vLLM (requires CUDA-capable GPU)
+pip install vllm
+
+# Serve gpt-oss-20b (downloads weights automatically on first launch)
+python -m vllm.entrypoints.openai.api_server \
+  --model gpt-oss-20b \
+  --host 0.0.0.0 --port 8080
+
+# Or serve a different model (e.g. Mistral-7B-Instruct)
+python -m vllm.entrypoints.openai.api_server \
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --host 0.0.0.0 --port 8080
+```
+
+The server will expose an OpenAI-compatible API at `http://localhost:8080/v1`.
+
+**Alternative: using Ollama** (simplest setup, no CUDA config needed):
+
+```bash
+# Install Ollama — https://ollama.ai
+ollama pull mistral           # or any supported model
+ollama serve                  # starts on http://localhost:11434
+
+# Then in your .env:
+LOCAL_MODEL_URL=http://localhost:11434/v1
+LOCAL_MODEL_NAME=mistral
+```
+
+**Note:** Pipeline prompts (variable extraction, clarification, formatting) were designed with gpt-oss-20b in mind. Other models will work but may need prompt adjustments for optimal output quality.
 
 ## Backend API
 
