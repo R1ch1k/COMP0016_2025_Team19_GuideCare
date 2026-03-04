@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: guidecare
+      POSTGRES_PASSWORD: guidecare
+      POSTGRES_DB: guidecare
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guidecare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://guidecare:guidecare@postgres:5432/guidecare
+      - LLM_MODE=${LLM_MODE:-api}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - LOCAL_MODEL_URL=${LOCAL_MODEL_URL:-http://host.docker.internal:8080/v1}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-gpt-oss-20b}
+      - LANGGRAPH_API_URL=
+      - LANGGRAPH_API_KEY=
+      - LANGGRAPH_WORKFLOW_ID=
+      - CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/data:/app/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+    environment:
+      - TEAM_PASSWORD=${TEAM_PASSWORD:-changeme123}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

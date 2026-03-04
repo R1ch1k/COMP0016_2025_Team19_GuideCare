@@ -1,0 +1,32 @@
+{
+  "n1": {
+    "variable": "chooses_no_slt"
+  },
+  "n3": {
+    "variable": "waiting_for_slt_needs_treatment"
+  },
+  "n4": {
+    "variable": "slt_not_suitable"
+  },
+  "n5": {
+    "variable": "cannot_tolerate_pharmacological_treatment"
+  },
+  "n7": {
+    "variable": "iop_not_reduced_with_pga"
+  },
+  "n9": {
+    "variable": "newly_diagnosed_coag"
+  },
+  "n11": {
+    "variable": "insufficient_iop_reduction_post_surgery"
+  },
+  "n13": {
+    "variable": "advanced_coag_no_surgery"
+  },
+  "n15": {
+    "variable": "satisfactory_adherence_and_technique"
+  },
+  "n17": {
+    "variable": "reduced_effects_of_initial_slt"
+  }
+}

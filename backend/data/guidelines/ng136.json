@@ -1,0 +1,530 @@
+{
+  "guideline_id": "nice_hypertension_ng136_2023",
+  "name": "Hypertension in adults: diagnosis and management",
+  "version": "NG136 (Published: August 2019, Updated: March 2023)",
+  "citation": "NICE guideline [NG136]",
+  "citation_url": "https://www.nice.org.uk/guidance/ng136",
+  "rules": [
+    "IF clinic BP ≥ 180/120 mmHg AND (retinal haemorrhage OR papilloedema OR life-threatening symptoms) THEN refer for same-day specialist assessment.",
+    "IF clinic BP ≥ 180/120 mmHg AND target-organ damage present AND no emergency signs THEN start antihypertensive drug treatment immediately.",
+    "IF clinic BP ≥ 180/120 mmHg AND no target-organ damage AND no emergency signs THEN repeat clinic BP measurement within 7 days.",
+    "IF repeat clinic BP ≥ 180/120 mmHg THEN consider starting antihypertensive drug treatment immediately.",
+    "IF clinic BP 140-179/90-119 mmHg THEN offer ambulatory blood pressure monitoring (ABPM) to confirm diagnosis.",
+    "IF ABPM not tolerated or declined THEN offer home blood pressure monitoring (HBPM).",
+    "IF ABPM daytime average ≥ 135/85 mmHg OR HBPM average ≥ 135/85 mmHg THEN diagnose hypertension.",
+    "IF hypertension confirmed AND (target-organ damage OR cardiovascular disease OR renal disease OR diabetes OR QRISK ≥ 10%) THEN offer antihypertensive drug treatment.",
+    "IF hypertension confirmed AND age < 40 years THEN consider specialist evaluation for secondary causes.",
+    "IF hypertension confirmed AND age < 80 years AND no target-organ damage AND QRISK < 10% THEN offer lifestyle advice and annual BP review.",
+    "IF hypertension confirmed AND age ≥ 80 years THEN offer antihypertensive drug treatment if clinic BP ≥ 150/90 mmHg.",
+    "IF clinic BP < 140/90 mmHg AND no target-organ damage THEN offer lifestyle advice and recheck BP in 5 years.",
+    "IF starting treatment AND age < 55 years AND not of black African or African-Caribbean family origin THEN offer ACE inhibitor or ARB (Step 1).",
+    "IF starting treatment AND (age ≥ 55 years OR black African or African-Caribbean family origin) THEN offer calcium channel blocker (Step 1).",
+    "IF Step 1 does not achieve target BP THEN offer ACE inhibitor or ARB + calcium channel blocker (Step 2).",
+    "IF Step 2 does not achieve target BP THEN offer ACE inhibitor or ARB + calcium channel blocker + thiazide-like diuretic (Step 3).",
+    "IF Step 3 does not achieve target BP AND BP ≥ 140/90 mmHg with optimal tolerated doses THEN consider Step 4: specialist referral or add low-dose spironolactone or alpha-blocker or beta-blocker.",
+    "IF BP controlled on treatment THEN review annually and check for postural hypotension in older adults.",
+    "IF age < 80 years THEN target clinic BP < 140/90 mmHg (ABPM/HBPM target < 135/85 mmHg).",
+    "IF age ≥ 80 years THEN target clinic BP < 150/90 mmHg (ABPM/HBPM target < 145/85 mmHg)."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "action",
+      "text": "Measure clinic BP"
+    },
+    {
+      "id": "n2",
+      "type": "condition",
+      "text": "Clinic BP ≥ 180/120 mmHg?"
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "Retinal haemorrhage OR papilloedema OR life-threatening symptoms?"
+    },
+    {
+      "id": "n4",
+      "type": "action",
+      "text": "Same-day specialist assessment"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "Target-organ damage present?"
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Start antihypertensive drug treatment immediately"
+    },
+    {
+      "id": "n7",
+      "type": "action",
+      "text": "Repeat clinic BP within 7 days"
+    },
+    {
+      "id": "n8",
+      "type": "condition",
+      "text": "Repeat BP ≥ 180/120 mmHg?"
+    },
+    {
+      "id": "n9",
+      "type": "action",
+      "text": "Consider starting treatment immediately"
+    },
+    {
+      "id": "n10",
+      "type": "action",
+      "text": "Continue monitoring"
+    },
+    {
+      "id": "n11",
+      "type": "condition",
+      "text": "Clinic BP 140-179/90-119 mmHg?"
+    },
+    {
+      "id": "n12",
+      "type": "action",
+      "text": "Offer ABPM to confirm diagnosis"
+    },
+    {
+      "id": "n13",
+      "type": "condition",
+      "text": "ABPM tolerated and accepted?"
+    },
+    {
+      "id": "n14",
+      "type": "action",
+      "text": "Perform ABPM"
+    },
+    {
+      "id": "n15",
+      "type": "action",
+      "text": "Offer HBPM instead"
+    },
+    {
+      "id": "n16",
+      "type": "condition",
+      "text": "ABPM daytime average ≥ 135/85 OR HBPM average ≥ 135/85?"
+    },
+    {
+      "id": "n17",
+      "type": "action",
+      "text": "Diagnose hypertension"
+    },
+    {
+      "id": "n18",
+      "type": "action",
+      "text": "No hypertension - recheck in 5 years"
+    },
+    {
+      "id": "n19",
+      "type": "condition",
+      "text": "Target-organ damage OR CVD OR renal disease OR diabetes OR QRISK ≥ 10%?"
+    },
+    {
+      "id": "n20",
+      "type": "action",
+      "text": "Offer antihypertensive drug treatment"
+    },
+    {
+      "id": "n21",
+      "type": "condition",
+      "text": "Age < 40 years?"
+    },
+    {
+      "id": "n22",
+      "type": "action",
+      "text": "Consider specialist evaluation for secondary causes"
+    },
+    {
+      "id": "n23",
+      "type": "condition",
+      "text": "Age < 80 years?"
+    },
+    {
+      "id": "n24",
+      "type": "action",
+      "text": "Offer lifestyle advice and annual BP review"
+    },
+    {
+      "id": "n25",
+      "type": "condition",
+      "text": "Clinic BP ≥ 150/90 mmHg (age ≥ 80)?"
+    },
+    {
+      "id": "n26",
+      "type": "action",
+      "text": "Offer antihypertensive drug treatment"
+    },
+    {
+      "id": "n27",
+      "type": "action",
+      "text": "Lifestyle advice only"
+    },
+    {
+      "id": "n28",
+      "type": "action",
+      "text": "Lifestyle advice - recheck in 5 years"
+    },
+    {
+      "id": "n29",
+      "type": "condition",
+      "text": "Age < 55 AND not black African/Caribbean?"
+    },
+    {
+      "id": "n30",
+      "type": "action",
+      "text": "Step 1: ACE inhibitor or ARB"
+    },
+    {
+      "id": "n31",
+      "type": "action",
+      "text": "Step 1: Calcium channel blocker"
+    },
+    {
+      "id": "n32",
+      "type": "condition",
+      "text": "Target BP achieved?"
+    },
+    {
+      "id": "n33",
+      "type": "action",
+      "text": "Step 2: ACE inhibitor/ARB + CCB"
+    },
+    {
+      "id": "n34",
+      "type": "action",
+      "text": "Continue current treatment and review annually"
+    },
+    {
+      "id": "n35",
+      "type": "condition",
+      "text": "Target BP achieved?"
+    },
+    {
+      "id": "n36",
+      "type": "action",
+      "text": "Step 3: ACE inhibitor/ARB + CCB + thiazide-like diuretic"
+    },
+    {
+      "id": "n37",
+      "type": "condition",
+      "text": "Target BP achieved?"
+    },
+    {
+      "id": "n38",
+      "type": "action",
+      "text": "Step 4: Seek specialist advice or add spironolactone/alpha-blocker/beta-blocker"
+    },
+    {
+      "id": "n39",
+      "type": "action",
+      "text": "Annual review and check postural hypotension"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": "next"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "label": "yes"
+    },
+    {
+      "from": "n2",
+      "to": "n11",
+      "label": "no"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "label": "yes"
+    },
+    {
+      "from": "n3",
+      "to": "n5",
+      "label": "no"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "label": "yes"
+    },
+    {
+      "from": "n5",
+      "to": "n7",
+      "label": "no"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "label": "next"
+    },
+    {
+      "from": "n8",
+      "to": "n9",
+      "label": "yes"
+    },
+    {
+      "from": "n8",
+      "to": "n10",
+      "label": "no"
+    },
+    {
+      "from": "n11",
+      "to": "n12",
+      "label": "yes"
+    },
+    {
+      "from": "n11",
+      "to": "n28",
+      "label": "no"
+    },
+    {
+      "from": "n12",
+      "to": "n13",
+      "label": "next"
+    },
+    {
+      "from": "n13",
+      "to": "n14",
+      "label": "yes"
+    },
+    {
+      "from": "n13",
+      "to": "n15",
+      "label": "no"
+    },
+    {
+      "from": "n14",
+      "to": "n16",
+      "label": "next"
+    },
+    {
+      "from": "n15",
+      "to": "n16",
+      "label": "next"
+    },
+    {
+      "from": "n16",
+      "to": "n17",
+      "label": "yes"
+    },
+    {
+      "from": "n16",
+      "to": "n18",
+      "label": "no"
+    },
+    {
+      "from": "n17",
+      "to": "n19",
+      "label": "next"
+    },
+    {
+      "from": "n19",
+      "to": "n20",
+      "label": "yes"
+    },
+    {
+      "from": "n19",
+      "to": "n21",
+      "label": "no"
+    },
+    {
+      "from": "n21",
+      "to": "n22",
+      "label": "yes"
+    },
+    {
+      "from": "n21",
+      "to": "n23",
+      "label": "no"
+    },
+    {
+      "from": "n23",
+      "to": "n24",
+      "label": "yes"
+    },
+    {
+      "from": "n23",
+      "to": "n25",
+      "label": "no"
+    },
+    {
+      "from": "n25",
+      "to": "n26",
+      "label": "yes"
+    },
+    {
+      "from": "n25",
+      "to": "n27",
+      "label": "no"
+    },
+    {
+      "from": "n20",
+      "to": "n29",
+      "label": "next"
+    },
+    {
+      "from": "n26",
+      "to": "n29",
+      "label": "next"
+    },
+    {
+      "from": "n29",
+      "to": "n30",
+      "label": "yes"
+    },
+    {
+      "from": "n29",
+      "to": "n31",
+      "label": "no"
+    },
+    {
+      "from": "n30",
+      "to": "n32",
+      "label": "next"
+    },
+    {
+      "from": "n31",
+      "to": "n32",
+      "label": "next"
+    },
+    {
+      "from": "n32",
+      "to": "n34",
+      "label": "yes"
+    },
+    {
+      "from": "n32",
+      "to": "n33",
+      "label": "no"
+    },
+    {
+      "from": "n33",
+      "to": "n35",
+      "label": "next"
+    },
+    {
+      "from": "n35",
+      "to": "n34",
+      "label": "yes"
+    },
+    {
+      "from": "n35",
+      "to": "n36",
+      "label": "no"
+    },
+    {
+      "from": "n36",
+      "to": "n37",
+      "label": "next"
+    },
+    {
+      "from": "n37",
+      "to": "n34",
+      "label": "yes"
+    },
+    {
+      "from": "n37",
+      "to": "n38",
+      "label": "no"
+    },
+    {
+      "from": "n38",
+      "to": "n39",
+      "label": "next"
+    },
+    {
+      "from": "n34",
+      "to": "n39",
+      "label": "next"
+    }
+  ],
+  "condition_evaluators": {
+    "n2": {
+      "type": "bp_compare",
+      "variable": "clinic_bp",
+      "threshold": "180/120",
+      "op": ">="
+    },
+    "n3": {
+      "variable": "emergency_signs"
+    },
+    "n5": {
+      "variable": "target_organ_damage"
+    },
+    "n8": {
+      "type": "bp_compare",
+      "variable": "repeat_bp",
+      "threshold": "180/120",
+      "op": ">="
+    },
+    "n11": {
+      "type": "bp_range",
+      "variable": "clinic_bp",
+      "systolic_min": 140,
+      "systolic_max": 179,
+      "diastolic_min": 90,
+      "diastolic_max": 119
+    },
+    "n13": {
+      "variable": "abpm_tolerated"
+    },
+    "n16": {
+      "type": "or",
+      "conditions": [
+        { "type": "bp_compare", "variable": "abpm_daytime", "threshold": "135/85", "op": ">=" },
+        { "type": "bp_compare", "variable": "hbpm_average", "threshold": "135/85", "op": ">=" }
+      ]
+    },
+    "n19": {
+      "type": "or",
+      "conditions": [
+        { "variable": "target_organ_damage" },
+        { "variable": "cardiovascular_disease" },
+        { "variable": "renal_disease" },
+        { "variable": "diabetes" },
+        { "type": "numeric_compare", "variable": "qrisk_10yr", "threshold": 10, "op": ">=" }
+      ]
+    },
+    "n21": {
+      "type": "age_compare",
+      "variable": "age",
+      "threshold": 40,
+      "op": "<"
+    },
+    "n23": {
+      "type": "age_compare",
+      "variable": "age",
+      "threshold": 80,
+      "op": "<"
+    },
+    "n25": {
+      "type": "bp_compare",
+      "variable": "clinic_bp",
+      "threshold": "150/90",
+      "op": ">="
+    },
+    "n29": {
+      "type": "and",
+      "conditions": [
+        { "type": "age_compare", "variable": "age", "threshold": 55, "op": "<" },
+        { "variable": "not_black_african_caribbean" }
+      ]
+    },
+    "n32": {
+      "variable": "target_bp_achieved"
+    },
+    "n35": {
+      "variable": "target_bp_achieved"
+    },
+    "n37": {
+      "variable": "target_bp_achieved"
+    }
+  }
+}

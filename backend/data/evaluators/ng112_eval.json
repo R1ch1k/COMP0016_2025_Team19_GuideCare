@@ -1,0 +1,56 @@
+{
+  "n1": {
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 16,
+        "op": ">="
+      },
+      {
+        "variable": "recurrent_uti"
+      }
+    ]
+  },
+  "n4": {
+    "variable": "resistant_to_first_choice_antibiotics"
+  },
+  "n6": {
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 0.25,
+        "op": "<"
+      },
+      {
+        "variable": "recurrent_uti"
+      }
+    ]
+  },
+  "n8": {
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 0.25,
+        "op": ">="
+      },
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 16,
+        "op": "<"
+      },
+      {
+        "variable": "recurrent_uti"
+      }
+    ]
+  },
+  "n10": {
+    "variable": "resistant_to_first_choice_antibiotics"
+  }
+}

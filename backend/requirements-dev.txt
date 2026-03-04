@@ -1,0 +1,6 @@
+pytest
+pytest-asyncio
+testcontainers
+aiosqlite
+httpx
+langgraph-cli

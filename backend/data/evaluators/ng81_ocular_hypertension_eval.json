@@ -1,0 +1,51 @@
+{
+  "n1": {
+    "type": "and",
+    "conditions": [
+      {
+        "type": "numeric_compare",
+        "variable": "intraocular_pressure",
+        "threshold": 24,
+        "op": ">="
+      },
+      {
+        "variable": "risk_of_visual_impairment"
+      }
+    ]
+  },
+  "n3": {
+    "type": "and",
+    "conditions": [
+      {
+        "variable": "risk_of_visual_impairment"
+      },
+      {
+        "variable": "cannot_tolerate_current_treatment"
+      }
+    ]
+  },
+  "n5": {
+    "variable": "cannot_tolerate_alternative_pga"
+  },
+  "n7": {
+    "variable": "cannot_tolerate_beta_blocker"
+  },
+  "n9": {
+    "variable": "slt_not_suitable"
+  },
+  "n11": {
+    "variable": "iop_not_reduced_sufficiently"
+  },
+  "n13": {
+    "variable": "chooses_not_to_have_slt"
+  },
+  "n15": {
+    "variable": "waiting_for_slt_needs_treatment"
+  },
+  "n16": {
+    "variable": "current_treatment_not_reducing_iop"
+  },
+  "n18": {
+    "variable": "iop_not_reduced_with_pga"
+  }
+}

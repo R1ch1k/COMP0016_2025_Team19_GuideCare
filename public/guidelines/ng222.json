@@ -1,0 +1,125 @@
+{
+  "guideline_id": "NG222",
+  "name": "Depression in adults: preventing relapse",
+  "version": "2022",
+  "citation": "NICE guideline on depression in adults: treatment and management",
+  "citation_url": "https://www.nice.org.uk/guidance/ng222",
+  "rules": [
+    "IF a person has completed treatment for depression THEN assess if full or partial remission has been achieved.",
+    "IF full or partial remission has NOT been achieved THEN follow further line treatment recommendations.",
+    "IF full or partial remission has been achieved THEN assess if the person is at higher risk of relapse.",
+    "IF the person is at higher risk of relapse THEN consider continuing treatment with modifications for relapse prevention.",
+    "IF the person is NOT at higher risk of relapse THEN discuss pros and cons of continued treatment.",
+    "IF psychological therapy alone achieved remission THEN consider continuing with adapted therapy for relapse prevention.",
+    "IF antidepressants alone achieved remission THEN consider continuing with the same dose or switch to alternatives if discontinuing.",
+    "IF combination treatment achieved remission THEN consider continuing both or choose one based on guidelines.",
+    "IF choosing to discontinue medication THEN explain withdrawal process and emphasize seeking help if symptoms recur.",
+    "Review antidepressant medication at least every 6 months, and psychological interventions when finishing relapse prevention treatment."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Has the person completed treatment for depression?"
+    },
+    {
+      "id": "n2",
+      "type": "condition",
+      "text": "Has full or partial remission been achieved following acute treatment?"
+    },
+    {
+      "id": "n3",
+      "type": "action",
+      "text": "Follow further line treatment recommendations."
+    },
+    {
+      "id": "n4",
+      "type": "condition",
+      "text": "Is the person at higher risk of relapse?"
+    },
+    {
+      "id": "n5",
+      "type": "action",
+      "text": "Continue treatment with modifications for relapse prevention."
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Discuss pros and cons of continued treatment."
+    },
+    {
+      "id": "n7",
+      "type": "condition",
+      "text": "Which acute treatment achieved remission?"
+    },
+    {
+      "id": "n8",
+      "type": "action",
+      "text": "Continue with adapted psychological therapy for relapse prevention."
+    },
+    {
+      "id": "n9",
+      "type": "action",
+      "text": "Continue with the same antidepressant dose."
+    },
+    {
+      "id": "n10",
+      "type": "action",
+      "text": "Switch to group CBT or MBCT if discontinuing antidepressants."
+    },
+    {
+      "id": "n11",
+      "type": "action",
+      "text": "Continue combination treatment or choose one component based on guidelines."
+    },
+    {
+      "id": "n12",
+      "type": "action",
+      "text": "Explain safe withdrawal from medication and symptoms monitoring."
+    },
+    {
+      "id": "n13",
+      "type": "action",
+      "text": "Review medication at least every 6 months or as per treatment completion."
+    }
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n2", "to": "n3", "label": "no"},
+    {"from": "n2", "to": "n4", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "yes"},
+    {"from": "n4", "to": "n6", "label": "no"},
+    {"from": "n5", "to": "n7", "label": "next"},
+    {"from": "n6", "to": "n7", "label": "next"},
+    {"from": "n7", "to": "n8", "label": "yes, psychological therapy"},
+    {"from": "n7", "to": "n9", "label": "yes, antidepressants"},
+    {"from": "n7", "to": "n11", "label": "yes, combination"},
+    {"from": "n8", "to": "n13", "label": "next"},
+    {"from": "n9", "to": "n10", "label": "if discontinuing"},
+    {"from": "n9", "to": "n13", "label": "next"},
+    {"from": "n10", "to": "n13", "label": "next"},
+    {"from": "n11", "to": "n12", "label": "if discontinuing medication"},
+    {"from": "n11", "to": "n13", "label": "next"},
+    {"from": "n12", "to": "n13", "label": "next"}
+  ],
+  "condition_evaluators": {
+    "n1": {
+      "variable": "completed_treatment"
+    },
+    "n2": {
+      "variable": "remission_achieved"
+    },
+    "n4": {
+      "variable": "higher_relapse_risk"
+    },
+    "n7": {
+      "type": "treatment_type",
+      "variable": "acute_treatment",
+      "map": {
+        "psychological therapy alone": "yes, psychological therapy",
+        "antidepressants alone": "yes, antidepressants",
+        "combination therapy": "yes, combination"
+      }
+    }
+  }
+}

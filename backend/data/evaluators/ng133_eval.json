@@ -1,0 +1,36 @@
+{
+  "n1": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "moderate_risk_factors_2_or_more"
+      },
+      {
+        "variable": "high_risk_factors_1_or_more"
+      }
+    ]
+  },
+  "n3": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "previous_severe_eclampsia"
+      },
+      {
+        "variable": "pre_eclampsia_birth_before_34_weeks"
+      },
+      {
+        "variable": "pre_eclampsia_low_birth_weight"
+      },
+      {
+        "variable": "intrauterine_death"
+      },
+      {
+        "variable": "placental_abruption"
+      }
+    ]
+  },
+  "n5": {
+    "variable": "cardiotocography_indicated"
+  }
+}

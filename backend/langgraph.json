@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "guidecare": "./src/graph_export.py:graph"
+  },
+  "env": ".env"
+}

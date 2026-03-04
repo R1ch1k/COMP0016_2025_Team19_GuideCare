@@ -1,0 +1,70 @@
+{
+  "n1": {
+    "type": "or",
+    "conditions": [
+      {
+        "type": "numeric_compare",
+        "variable": "feverpain_score",
+        "threshold": 1,
+        "op": "<="
+      },
+      {
+        "type": "numeric_compare",
+        "variable": "centor_score",
+        "threshold": 2,
+        "op": "<="
+      }
+    ]
+  },
+  "n3": {
+    "type": "or",
+    "conditions": [
+      {
+        "type": "numeric_compare",
+        "variable": "feverpain_score",
+        "threshold": 2,
+        "op": "=="
+      },
+      {
+        "type": "numeric_compare",
+        "variable": "feverpain_score",
+        "threshold": 3,
+        "op": "=="
+      }
+    ]
+  },
+  "n5": {
+    "type": "or",
+    "conditions": [
+      {
+        "type": "numeric_compare",
+        "variable": "feverpain_score",
+        "threshold": 4,
+        "op": ">="
+      },
+      {
+        "type": "numeric_compare",
+        "variable": "centor_score",
+        "threshold": 3,
+        "op": ">="
+      }
+    ]
+  },
+  "n10": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "systemically_very_unwell"
+      },
+      {
+        "variable": "signs_of_serious_illness_condition"
+      },
+      {
+        "variable": "high_risk_of_complications"
+      }
+    ]
+  },
+  "n12": {
+    "variable": "severe_systemic_infection_or_severe_complications"
+  }
+}

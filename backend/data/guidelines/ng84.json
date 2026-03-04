@@ -1,0 +1,111 @@
+{
+  "guideline_id": "NG84",
+  "name": "Sore Throat (Acute): Antimicrobial Prescribing",
+  "version": "February 2023",
+  "citation": "NICE NG84 Clinical Guideline: Sore Throat (Acute): Antimicrobial Prescribing",
+  "citation_url": "https://www.nice.org.uk/guidance/ng84",
+  "rules": [
+    "IF severe systemic infection or severe complications occur THEN Refer to hospital.",
+    "IF person is systemically very unwell OR has symptoms and signs of a more serious illness or condition OR has high risk of complications THEN Offer an immediate antibiotic prescription.",
+    "IF FeverPAIN score is 0 or 1 OR Centor score is 0, 1, or 2 THEN Do not offer an antibiotic.",
+    "IF FeverPAIN score is 2 or 3 THEN Consider no antibiotic or a back-up antibiotic prescription.",
+    "IF FeverPAIN score is 4 or 5 OR Centor score is 3 or 4 THEN Consider an immediate antibiotic or a back-up antibiotic prescription.",
+    "IF person requires self-care THEN Consider paracetamol for pain or fever or if preferred and suitable, ibuprofen; advise to drink adequate fluids; note that some evidence supports medicated lozenges to reduce pain in adults, but not non-medicated lozenges, mouthwashes, or local anaesthetic mouth spray on its own."
+  ],
+  "nodes": [
+    {
+      "id": "n12",
+      "type": "condition",
+      "text": "Severe systemic infection or severe complications"
+    },
+    {
+      "id": "n13",
+      "type": "action",
+      "text": "Refer to hospital"
+    },
+    {
+      "id": "n10",
+      "type": "condition",
+      "text": "Person is systemically very unwell OR has symptoms and signs of a more serious illness or condition OR has high risk of complications"
+    },
+    {
+      "id": "n11",
+      "type": "action",
+      "text": "Offer an immediate antibiotic prescription"
+    },
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "FeverPAIN score is 0 or 1 OR Centor score is 0, 1, or 2"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Do not offer an antibiotic"
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "FeverPAIN score is 2 or 3"
+    },
+    {
+      "id": "n4",
+      "type": "action",
+      "text": "Consider no antibiotic or a back-up antibiotic prescription"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "FeverPAIN score is 4 or 5 OR Centor score is 3 or 4"
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Consider an immediate antibiotic or a back-up antibiotic prescription"
+    },
+    {
+      "id": "n8",
+      "type": "action",
+      "text": "Advise that the antibiotic is not needed immediately; use prescription if no improvement in 3 to 5 days, or symptoms worsen, and seek medical help if symptoms worsen rapidly or significantly or if the person becomes very unwell"
+    },
+    {
+      "id": "n9",
+      "type": "action",
+      "text": "Advise to seek medical help if symptoms worsen rapidly or significantly or if the person becomes very unwell"
+    },
+    {
+      "id": "n14",
+      "type": "action",
+      "text": "Consider paracetamol for pain or fever or if preferred and suitable, ibuprofen"
+    },
+    {
+      "id": "n15",
+      "type": "action",
+      "text": "Advise to drink adequate fluids"
+    },
+    {
+      "id": "n16",
+      "type": "action",
+      "text": "Note evidence supports medicated lozenges to reduce pain in adults, but not for non-medicated lozenges, mouthwashes, or local anaesthetic mouth sprays."
+    }
+  ],
+  "edges": [
+    {"from": "n12", "to": "n13", "label": "yes"},
+    {"from": "n12", "to": "n10", "label": "no"},
+    {"from": "n10", "to": "n11", "label": "yes"},
+    {"from": "n10", "to": "n1", "label": "no"},
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n3", "label": "no"},
+    {"from": "n3", "to": "n4", "label": "yes"},
+    {"from": "n3", "to": "n5", "label": "no"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n6", "to": "n8", "label": "next"},
+    {"from": "n8", "to": "n9", "label": "next"},
+    {"from": "n2", "to": "n14", "label": "next"},
+    {"from": "n4", "to": "n14", "label": "next"},
+    {"from": "n9", "to": "n14", "label": "next"},
+    {"from": "n11", "to": "n14", "label": "next"},
+    {"from": "n14", "to": "n15", "label": "next"},
+    {"from": "n15", "to": "n16", "label": "next"}
+  ]
+}

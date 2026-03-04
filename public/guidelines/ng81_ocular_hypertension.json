@@ -1,0 +1,139 @@
+{
+  "guideline_id": "NG81",
+  "name": "Management of Ocular Hypertension and Glaucoma",
+  "version": "January 2022",
+  "citation": "NICE Guideline NG81: Glaucoma: diagnosis and management",
+  "citation_url": "http://www.nice.org.uk/guidance/NG81",
+  "rules": [
+    "IF person with ocular hypertension or diagnosed glaucoma has newly diagnosed ocular hypertension with IOP ≥ 24 mmHg THEN assess for risk of visual impairment within their lifetime.",
+    "IF person has a risk of visual impairment AND cannot tolerate their current treatment THEN offer an alternative generic PGA.",
+    "IF alternative generic PGA is not tolerated THEN offer a beta blocker.",
+    "IF neither alternative generic PGA nor beta blocker is tolerated THEN offer non-generic PGA, carbonic anhydrase inhibitor, sympathomimetic, miotic, or a combination thereof.",
+    "IF SLT is not suitable for a person THEN offer a generic PGA.",
+    "IF IOP is not sufficiently reduced with SLT or medical treatment THEN refer to a consultant ophthalmologist.",
+    "IF person chooses not to have SLT THEN offer a generic PGA.",
+    "IF person is waiting for SLT and needs treatment in the interim THEN offer a generic PGA.",
+    "IF person's current treatment is not reducing IOP sufficiently THEN offer a medicine from another class (beta-blocker, carbonic anhydrase inhibitor, or sympathomimetic).",
+    "IF IOP is not reduced despite treatment with PGA THEN ask about adherence and eye drop instillation technique."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Person with newly diagnosed ocular hypertension with IOP ≥ 24 mmHg"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Assess risk of visual impairment within their lifetime"
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "Risk of visual impairment AND cannot tolerate current treatment"
+    },
+    {
+      "id": "n4",
+      "type": "action",
+      "text": "Offer an alternative generic PGA"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "Alternative generic PGA not tolerated"
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Offer a beta blocker"
+    },
+    {
+      "id": "n7",
+      "type": "condition",
+      "text": "Beta blocker not tolerated"
+    },
+    {
+      "id": "n8",
+      "type": "action",
+      "text": "Offer non-generic PGA, carbonic anhydrase inhibitor, sympathomimetic, miotic, or combination"
+    },
+    {
+      "id": "n9",
+      "type": "condition",
+      "text": "SLT not suitable"
+    },
+    {
+      "id": "n10",
+      "type": "action",
+      "text": "Offer a generic PGA"
+    },
+    {
+      "id": "n11",
+      "type": "condition",
+      "text": "IOP not sufficiently reduced with SLT or medical treatment"
+    },
+    {
+      "id": "n12",
+      "type": "action",
+      "text": "Refer to a consultant ophthalmologist"
+    },
+    {
+      "id": "n13",
+      "type": "condition",
+      "text": "Person chooses not to have SLT"
+    },
+    {
+      "id": "n14",
+      "type": "action",
+      "text": "Offer a generic PGA"
+    },
+    {
+      "id": "n15",
+      "type": "condition",
+      "text": "Person waiting for SLT needs interim treatment"
+    },
+    {
+      "id": "n16",
+      "type": "condition",
+      "text": "Person's current treatment not reducing IOP sufficiently"
+    },
+    {
+      "id": "n17",
+      "type": "action",
+      "text": "Offer medicine from another class (beta-blocker, carbonic anhydrase inhibitor, sympathomimetic)"
+    },
+    {
+      "id": "n18",
+      "type": "condition",
+      "text": "IOP not reduced despite treatment with PGA"
+    },
+    {
+      "id": "n19",
+      "type": "action",
+      "text": "Ask about adherence and eye drop instillation technique"
+    }
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n10", "label": "no"},
+    {"from": "n2", "to": "n9", "label": "next"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n13", "label": "no"},
+    {"from": "n13", "to": "n14", "label": "yes"},
+    {"from": "n13", "to": "n15", "label": "no"},
+    {"from": "n15", "to": "n14", "label": "yes"},
+    {"from": "n15", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n10", "to": "n18", "label": "next"},
+    {"from": "n14", "to": "n18", "label": "next"},
+    {"from": "n18", "to": "n19", "label": "yes"},
+    {"from": "n19", "to": "n16", "label": "next"},
+    {"from": "n16", "to": "n17", "label": "yes"},
+    {"from": "n17", "to": "n3", "label": "next"},
+    {"from": "n3", "to": "n4", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "next"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n6", "to": "n7", "label": "next"},
+    {"from": "n7", "to": "n8", "label": "yes"}
+  ]
+}

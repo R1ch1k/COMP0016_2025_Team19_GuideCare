@@ -1,0 +1,158 @@
+{
+  "guideline_id": "NG232",
+  "name": "Head injury: assessment and early management",
+  "version": "18/05/2023",
+  "citation": "NICE Guideline NG232: Head Injury - Assessment and Early Management",
+  "citation_url": "https://www.nice.org.uk/guidance/ng232",
+  "rules": [
+    "IF person is 16 or over and presents to the emergency department with a head injury, THEN assess for high-risk factors.",
+    "IF any high-risk factor is present (GCS score of 12 or less, intubation, urgent cervical spine diagnosis needed, clinical suspicion of injury with other areas scanned, over 65, dangerous mechanism, focal neurological deficit, paraesthesia), THEN do a CT scan of the cervical spine within 1 hour and provide provisional written radiology report within 1 hour of the scan.",
+    "IF suspicion of cervical spine injury but no high-risk factors, THEN consider condition predisposing higher risk for further assessment.",
+    "IF person has condition predisposing higher risk (e.g., axial spondyloarthritis), THEN assess further risk factors.",
+    "IF no predisposing conditions, THEN assess for low-risk factors to perform safe neck movement assessment.",
+    "IF low-risk factors are present, THEN assess if the person can actively rotate their neck to 45 degrees left and right.",
+    "IF person under 16 presents with a head injury, THEN assess for high-risk factors.",
+    "IF any high-risk factor (GCS score of 12 or less, intubation, urgent cervical spine diagnosis needed, clinical suspicion of injury, focal neurological signs, paraesthesia) is present, THEN do a CT scan of the cervical spine within 1 hour and provide provisional written radiology report within 1 hour.",
+    "IF suspicion exists but no high-risk factors, THEN check for further risk factors (dangerous mechanism, predisposal to higher risk conditions, suspicion of non-accidental injury).",
+    "IF further risk factors or strong clinical suspicion after normal X-rays, THEN perform 3-view cervical spine X-rays within 1 hour, consider CT scan if needed.",
+    "IF low-risk factors are present and no high-risk factors, THEN evaluate the range of neck movement, ensuring 45-degree rotation left and right.",
+    "IF CT head scan is not required for those 16 and over, THEN examine for consciousness loss/amnesia.",
+    "IF further factors (age, bleeding disorders, dangerous mechanism, prolonged amnesia) are present, THEN perform CT within 8 hours.",
+    "IF only anticoagulants are involved, THEN consider scan timing based on presentation timeframe."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Person 16 or over presenting to the emergency department with a head injury"
+    },
+    {
+      "id": "n2",
+      "type": "condition",
+      "text": "Are any high-risk factors present?"
+    },
+    {
+      "id": "n3",
+      "type": "action",
+      "text": "Do a CT scan of the cervical spine within 1 hour and provide report within 1 hour"
+    },
+    {
+      "id": "n4",
+      "type": "condition",
+      "text": "Is there suspicion of cervical spine injury?"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "Does the person have a condition predisposing to higher risk?"
+    },
+    {
+      "id": "n6",
+      "type": "condition",
+      "text": "Are any low-risk factors present?"
+    },
+    {
+      "id": "n7",
+      "type": "action",
+      "text": "Assess if person can actively rotate neck 45 degrees left and right"
+    },
+    {
+      "id": "n8",
+      "type": "condition",
+      "text": "Person under 16 presenting to the emergency department with a head injury"
+    },
+    {
+      "id": "n9",
+      "type": "condition",
+      "text": "Are any high-risk factors present?"
+    },
+    {
+      "id": "n10",
+      "type": "action",
+      "text": "Do a CT scan of the cervical spine within 1 hour and provide report within 1 hour"
+    },
+    {
+      "id": "n11",
+      "type": "condition",
+      "text": "Are there any further risk factors or strong clinical suspicion of injury?"
+    },
+    {
+      "id": "n12",
+      "type": "action",
+      "text": "Perform 3-view cervical spine X-rays within 1 hour"
+    },
+    {
+      "id": "n13",
+      "type": "action",
+      "text": "No imaging or no further imaging needed"
+    },
+    {
+      "id": "n14",
+      "type": "action",
+      "text": "CT head scan not needed"
+    },
+    {
+      "id": "n15",
+      "type": "condition",
+      "text": "Loss of consciousness or amnesia since head injury?"
+    },
+    {
+      "id": "n16",
+      "type": "condition",
+      "text": "Are further factors like age, bleeding disorders, dangerous mechanism, prolonged amnesia present?"
+    },
+    {
+      "id": "n17",
+      "type": "action",
+      "text": "Do a CT head scan within 8 hours or considering presentation time"
+    },
+    {
+      "id": "n18",
+      "type": "action",
+      "text": "Consider timing for CT based on anticoagulants"
+    }
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n8", "label": "no"},
+    {"from": "n2", "to": "n3", "label": "yes"},
+    {"from": "n2", "to": "n4", "label": "no"},
+    {"from": "n4", "to": "n5", "label": "yes"},
+    {"from": "n4", "to": "n13", "label": "no"},
+    {"from": "n5", "to": "n12", "label": "yes"},
+    {"from": "n5", "to": "n6", "label": "no"},
+    {"from": "n6", "to": "n7", "label": "yes"},
+    {"from": "n6", "to": "n13", "label": "no"},
+    {"from": "n8", "to": "n9", "label": "yes"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n11", "to": "n13", "label": "no"},
+    {"from": "n3", "to": "n15", "label": "next"},
+    {"from": "n7", "to": "n15", "label": "next"},
+    {"from": "n10", "to": "n15", "label": "next"},
+    {"from": "n12", "to": "n15", "label": "next"},
+    {"from": "n13", "to": "n15", "label": "next"},
+    {"from": "n15", "to": "n16", "label": "yes"},
+    {"from": "n15", "to": "n14", "label": "no"},
+    {"from": "n16", "to": "n17", "label": "yes"},
+    {"from": "n16", "to": "n18", "label": "no"}
+  ],
+  "condition_evaluators": {
+    "n1": {
+      "type": "age_compare",
+      "variable": "age",
+      "threshold": 16,
+      "op": ">="
+    },
+    "n2": {
+      "variable": "high_risk_c_spine"
+    },
+    "n4": {
+      "variable": "suspicion_c_spine_injury"
+    },
+    "n5": {
+      "variable": "predisposing_condition"
+    }
+  }
+}

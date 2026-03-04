@@ -1,0 +1,123 @@
+{
+  "n2": {
+    "type": "bp_compare",
+    "variable": "clinic_bp",
+    "threshold": "180/120",
+    "op": ">="
+  },
+  "n3": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "retinal_haemorrhage"
+      },
+      {
+        "variable": "papilloedema"
+      },
+      {
+        "variable": "life_threatening_symptoms"
+      }
+    ]
+  },
+  "n5": {
+    "variable": "target_organ_damage"
+  },
+  "n8": {
+    "type": "bp_compare",
+    "variable": "repeat_clinic_bp",
+    "threshold": "180/120",
+    "op": ">="
+  },
+  "n11": {
+    "type": "bp_range",
+    "variable": "clinic_bp",
+    "systolic_min": 140,
+    "systolic_max": 179,
+    "diastolic_min": 90,
+    "diastolic_max": 119
+  },
+  "n13": {
+    "variable": "abpm_tolerated"
+  },
+  "n16": {
+    "type": "or",
+    "conditions": [
+      {
+        "type": "bp_compare",
+        "variable": "abpm_daytime",
+        "threshold": "135/85",
+        "op": ">="
+      },
+      {
+        "type": "bp_compare",
+        "variable": "hbpm_average",
+        "threshold": "135/85",
+        "op": ">="
+      }
+    ]
+  },
+  "n19": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "target_organ_damage"
+      },
+      {
+        "variable": "cardiovascular_disease"
+      },
+      {
+        "variable": "renal_disease"
+      },
+      {
+        "variable": "diabetes"
+      },
+      {
+        "type": "numeric_compare",
+        "variable": "qrisk_10yr",
+        "threshold": 10,
+        "op": ">="
+      }
+    ]
+  },
+  "n21": {
+    "type": "age_compare",
+    "variable": "age",
+    "threshold": 40,
+    "op": "<"
+  },
+  "n23": {
+    "type": "age_compare",
+    "variable": "age",
+    "threshold": 80,
+    "op": "<"
+  },
+  "n25": {
+    "type": "bp_compare",
+    "variable": "clinic_bp",
+    "threshold": "150/90",
+    "op": ">="
+  },
+  "n29": {
+    "type": "and",
+    "conditions": [
+      {
+        "type": "age_compare",
+        "variable": "age",
+        "threshold": 55,
+        "op": "<"
+      },
+      {
+        "variable": "not_black_african_caribbean"
+      }
+    ]
+  },
+  "n32": {
+    "variable": "target_bp_achieved"
+  },
+  "n35": {
+    "variable": "target_bp_achieved"
+  },
+  "n37": {
+    "variable": "target_bp_achieved"
+  }
+}

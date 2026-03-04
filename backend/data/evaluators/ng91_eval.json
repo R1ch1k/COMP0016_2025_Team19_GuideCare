@@ -1,0 +1,38 @@
+{
+  "n1": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "systemically_very_unwell"
+      },
+      {
+        "variable": "serious_illness_condition"
+      },
+      {
+        "variable": "high_risk_complications"
+      }
+    ]
+  },
+  "n3": {
+    "type": "or",
+    "conditions": [
+      {
+        "variable": "otorrhoea"
+      },
+      {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "age_compare",
+            "variable": "age",
+            "threshold": 2,
+            "op": "<"
+          },
+          {
+            "variable": "infection_both_ears"
+          }
+        ]
+      }
+    ]
+  }
+}

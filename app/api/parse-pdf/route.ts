@@ -167,7 +167,6 @@ export async function POST(req: NextRequest) {
     }
 
     // STEP 2: Generate condition evaluators
-    console.log('Generating condition evaluators...');
 
     try {
       const evaluatorCompletion = await openai.chat.completions.create({
@@ -195,7 +194,7 @@ export async function POST(req: NextRequest) {
           // Merge evaluators into the guideline
           guideline.condition_evaluators = evaluatorsData.condition_evaluators;
 
-          console.log(`Generated evaluators for ${Object.keys(evaluatorsData.condition_evaluators).length} condition nodes`);
+          // Evaluators generated successfully
         } else {
           console.warn('Evaluators response missing condition_evaluators field');
         }

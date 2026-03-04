@@ -7,11 +7,22 @@ function isNICEGuideline(guideline: AnyGuideline): guideline is NICEGuideline {
     return 'rules' in guideline && 'edges' in guideline;
 }
 
+interface PatientContext {
+    name: string;
+    age: number;
+    id: string;
+    primaryConcern: string;
+    status: string;
+    clinician: string;
+    notes?: string;
+}
+
 interface ChatRequestBody {
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
     guideline: AnyGuideline;
     decision: DecisionResult | null;
     mode: 'strict' | 'explain';
+    patientContext?: PatientContext | null;
 }
 
 function getOpenAIClient() {
@@ -60,7 +71,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { messages, guideline, decision, mode } = body;
+        const { messages, guideline, decision, mode, patientContext } = body;
 
         // Validate required fields
         if (!messages || !Array.isArray(messages)) {
@@ -89,8 +100,8 @@ export async function POST(req: NextRequest) {
 
         // Build system prompt based on mode
         const systemPrompt = mode === 'strict'
-            ? buildStrictPrompt(guideline, decision)
-            : buildExplainPrompt(guideline, decision);
+            ? buildStrictPrompt(guideline, decision, patientContext)
+            : buildExplainPrompt(guideline, decision, patientContext);
 
         const stream = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || 'gpt-4o-2024-08-06',
@@ -139,7 +150,25 @@ export async function POST(req: NextRequest) {
     }
 }
 
-function buildStrictPrompt(guideline: AnyGuideline, decision: DecisionResult | null): string {
+function buildPatientSection(patient: PatientContext | null | undefined): string {
+    if (!patient) return '';
+    const parts = [
+        `\nPATIENT RECORD (from EHR):`,
+        `- Name: ${patient.name}`,
+        `- Age: ${patient.age}`,
+        `- ID: ${patient.id}`,
+        `- Primary Concern: ${patient.primaryConcern}`,
+        `- Status: ${patient.status}`,
+        `- Clinician: ${patient.clinician}`,
+    ];
+    if (patient.notes) {
+        parts.push(`- Clinical Notes: ${patient.notes}`);
+    }
+    parts.push(`\nUse this patient information when applying the guidelines. You already know the patient's age, primary concern, and clinical notes — do not ask for information that is already provided above.`);
+    return parts.join('\n');
+}
+
+function buildStrictPrompt(guideline: AnyGuideline, decision: DecisionResult | null, patientContext?: PatientContext | null): string {
     const today = new Date().toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -162,7 +191,7 @@ TODAY'S DATE: ${today}
 GUIDELINE: ${guideline.name} (${guideline.version})
 SOURCE: ${guideline.citation}
 URL: ${guideline.citation_url}
-
+${buildPatientSection(patientContext)}
 CLINICAL DECISION RULES (YOU MUST FOLLOW THESE EXACTLY):
 ${rulesList}
 
@@ -191,20 +220,15 @@ STRICT INSTRUCTIONS:
    - Example: If you went n1 → n2 → n6, output \`[[PATH: n1, n2, n6]]\`
    - This is REQUIRED whenever you make a clinical recommendation
 
-8. **MANDATORY OUTPUT FORMAT**: When providing a final recommendation/decision, you MUST use this exact structure:
-
-### Diagnosis:
-[State the diagnosis or clinical finding]
-
-### Treatment:
-[Specific treatment recommendation]
-
-### Reason:
-[Clinical reasoning based on the rules. End with: "This recommendation is from ${guideline.citation}."]
+8. **MANDATORY OUTPUT FORMAT**: When providing a final recommendation/decision, write it as a clear, concise clinical recommendation in plain prose:
+   - Start with "Based on NICE ${guideline.guideline_id}, ..." and state the recommended action(s) directly from the rules you applied.
+   - If multiple actions apply, number them: (1) ... (2) ... (3) ...
+   - End the recommendation with: "This recommendation is from ${guideline.citation}."
+   - Then on a new line, include the PATH tag.
+   - **DO NOT** use "Diagnosis:", "Treatment:", or "Reason:" headers. Write the recommendation as natural clinical prose.
 
 \`[[PATH: node_id1, node_id2, ...]]\`
 
-**ALL FOUR COMPONENTS ARE REQUIRED**: Diagnosis, Treatment, Reason (with citation), and the PATH tag.
 **DO NOT** add any text after the PATH tag.`;
     }
 
@@ -247,7 +271,7 @@ GUIDELINE INFORMATION (keep this in the background):
 - Name: ${guideline.name} (${guideline.version})
 - Source: ${guideline.citation}
 - URL: ${guideline.citation_url}
-
+${buildPatientSection(patientContext)}
 INTERNAL DECISION TREE STRUCTURE (DO NOT MENTION THESE TECHNICAL DETAILS TO THE USER):
 Required Inputs:
 ${inputsList}
@@ -290,7 +314,7 @@ CONVERSATIONAL INSTRUCTIONS:
 Remember: Be helpful, professional, and conversational. Guide the user naturally without exposing the technical decision tree mechanics. Always base your questions on the actual Required Inputs defined for THIS specific guideline.`;
 }
 
-function buildExplainPrompt(guideline: AnyGuideline, decision: DecisionResult | null): string {
+function buildExplainPrompt(guideline: AnyGuideline, decision: DecisionResult | null, patientContext?: PatientContext | null): string {
     const today = new Date().toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -319,7 +343,7 @@ GUIDELINE INFORMATION:
 - Name: ${guideline.name} (${guideline.version})
 - Source: ${guideline.citation}
 - URL: ${guideline.citation_url}
-
+${buildPatientSection(patientContext)}
 CLINICAL DECISION RULES (Follow these strictly):
 ${rulesList}
 
@@ -354,20 +378,15 @@ INSTRUCTIONS:
    - Example: If you went n1 → n2 → n6, output \`[[PATH: n1, n2, n6]]\`
    - This is REQUIRED whenever you make a clinical recommendation
 
-7. **MANDATORY OUTPUT FORMAT**: When providing a final recommendation/decision, you MUST use this exact structure:
-
-### Diagnosis:
-[State the diagnosis or clinical finding]
-
-### Treatment:
-[Specific treatment recommendation]
-
-### Reason:
-[Clinical reasoning based on the rules. End with: "This recommendation is from ${guideline.citation}."]
+7. **MANDATORY OUTPUT FORMAT**: When providing a final recommendation/decision, write it as a clear, concise clinical recommendation in plain prose:
+   - Start with "Based on NICE ${guideline.guideline_id}, ..." and state the recommended action(s) directly from the rules you applied.
+   - If multiple actions apply, number them: (1) ... (2) ... (3) ...
+   - End the recommendation with: "This recommendation is from ${guideline.citation}."
+   - Then on a new line, include the PATH tag.
+   - **DO NOT** use "Diagnosis:", "Treatment:", or "Reason:" headers. Write the recommendation as natural clinical prose.
 
 \`[[PATH: node_id1, node_id2, ...]]\`
 
-**ALL FOUR COMPONENTS ARE REQUIRED**: Diagnosis, Treatment, Reason (with citation), and the PATH tag.
 **DO NOT** add any text after the PATH tag.
 
 Remember: You MUST follow the IF-THEN rules exactly as written. These are NICE guidelines and must be applied precisely.`;
@@ -412,7 +431,7 @@ GUIDELINE INFORMATION (keep this in the background):
 - Name: ${guideline.name} (${guideline.version})
 - Source: ${guideline.citation}
 - URL: ${guideline.citation_url}
-
+${buildPatientSection(patientContext)}
 INTERNAL DECISION TREE STRUCTURE (DO NOT EXPOSE THESE TECHNICAL DETAILS):
 Required Inputs:
 ${inputsList}

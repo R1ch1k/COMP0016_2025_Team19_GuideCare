@@ -1,0 +1,115 @@
+{
+  "guideline_id": "NG91",
+  "name": "Otitis Media (Acute): Antimicrobial Prescribing",
+  "version": "1",
+  "citation": "NICE, NG91: Otitis Media (Acute): Antimicrobial Prescribing, March 2022",
+  "citation_url": "https://www.nice.org.uk/guidance/ng91",
+  "rules": [
+    "IF the child or young person is systemically very unwell OR has symptoms and signs of a more serious illness or condition OR has high risk of complications THEN Refer to hospital.",
+    "IF there is otorrhoea in any child or young person OR the child is under 2 years with infection in both ears THEN Offer regular doses of paracetamol or ibuprofen for pain, AND Consider no antibiotic or a back-up antibiotic prescription, AND Consider eardrops containing an anaesthetic and an analgesic for pain IF an immediate antibiotic is not given AND if there is no eardrum perforation or otorrhoea.",
+    "IF no antibiotic is given THEN Advise the parent or caregiver that antibiotics are not needed and to seek medical help if symptoms worsen rapidly or significantly, do not improve after 3 days, or the child becomes very unwell.",
+    "IF a back-up antibiotic prescription is given THEN Advise that the antibiotic is not needed immediately, to use the prescription if no improvement in 3 days or symptoms worsen, and to seek medical help if symptoms worsen rapidly or significantly, or the child becomes very unwell.",
+    "IF an immediate antibiotic prescription is given THEN Advise to seek medical help if symptoms worsen rapidly or significantly, or the child becomes very unwell.",
+    "Reassess at any time if symptoms worsen rapidly or significantly, taking into account other possible diagnoses, any symptoms or signs suggesting a more serious illness or condition, and previous antibiotic use which may lead to resistant organisms.",
+    "Advise that acute otitis media lasts about 3 days but can last up to 1 week."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Is the child or young person systemically very unwell, or have symptoms and signs of a more serious illness or condition, or have a high risk of complications?"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Refer to hospital."
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "Is there otorrhoea in any child or young person or is the child under 2 years with infection in both ears?"
+    },
+    {
+      "id": "n4",
+      "type": "action",
+      "text": "Offer regular doses of paracetamol or ibuprofen for pain. Consider no antibiotic or a back-up antibiotic prescription. Consider eardrops containing an anaesthetic and an analgesic for pain if an immediate antibiotic is not given and there is no eardrum perforation or otorrhoea."
+    },
+    {
+      "id": "n5",
+      "type": "action",
+      "text": "Advise that antibiotics are not needed and to seek medical help if symptoms worsen rapidly or significantly, do not improve after 3 days, or the child becomes very unwell."
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Advise that the antibiotic is not needed immediately, to use the prescription if no improvement in 3 days or symptoms worsen, and to seek medical help if symptoms worsen rapidly or significantly, or the child becomes very unwell."
+    },
+    {
+      "id": "n7",
+      "type": "action",
+      "text": "Advise to seek medical help if symptoms worsen rapidly or significantly, or the child becomes very unwell."
+    },
+    {
+      "id": "n8",
+      "type": "action",
+      "text": "Reassess at any time if symptoms worsen rapidly or significantly, considering other possible diagnoses, any symptoms or signs suggesting a more serious illness or condition, and previous antibiotic use which may lead to resistant organisms."
+    },
+    {
+      "id": "n9",
+      "type": "action",
+      "text": "Advise that acute otitis media lasts about 3 days but can last up to 1 week."
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": "yes"
+    },
+    {
+      "from": "n1",
+      "to": "n3",
+      "label": "no"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "label": "yes"
+    },
+    {
+      "from": "n3",
+      "to": "n5",
+      "label": "no"
+    },
+    {
+      "from": "n4",
+      "to": "n6",
+      "label": "if applicable"
+    },
+    {
+      "from": "n4",
+      "to": "n7",
+      "label": "next"
+    },
+    {
+      "from": "n5",
+      "to": "n8",
+      "label": "next"
+    },
+    {
+      "from": "n6",
+      "to": "n8",
+      "label": "next"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "label": "next"
+    },
+    {
+      "from": "n8",
+      "to": "n9",
+      "label": "next"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ChatPanel from "@/components/ChatPanel";
 import { AnyGuideline, NICEGuideline } from "@/lib/types";
 import PatientInfoPanel, {
@@ -12,6 +12,23 @@ import GuidelineViewer from "@/components/GuidelineViewer";
 import { niceHypertensionGuideline } from "@/lib/guidelines/nice-hypertension";
 import { Eye } from "lucide-react";
 import SampleInputModal from "@/components/SampleInputModal";
+import ConnectDataModal from "@/components/ConnectDataModal";
+
+const BACKEND_HTTP_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+// All NICE guideline JSON files in public/guidelines/
+const GUIDELINE_FILES = [
+    "ng84.json",
+    "ng91.json",
+    "ng112.json",
+    "ng133.json",
+    "ng136.json",
+    "ng184.json",
+    "ng222.json",
+    "ng232.json",
+    "ng81_chronic_glaucoma.json",
+    "ng81_ocular_hypertension.json",
+];
 
 // Type guard to check if guideline is NICE format
 function isNICEGuideline(guideline: AnyGuideline): guideline is NICEGuideline {
@@ -23,8 +40,7 @@ export default function Home() {
     const [activeGuideline, setActiveGuideline] = useState<AnyGuideline | null>(
         null
     );
-    const [mode, setMode] = useState<"strict" | "explain">("explain");
-    const [showGuidelineSelector, setShowGuidelineSelector] = useState(true); // Show by default
+    const [showGuidelineSelector, setShowGuidelineSelector] = useState(false); // Closed by default
     const [sessionKey, setSessionKey] = useState(0); // Used to reset chat when guideline changes
     const [isUploadingPdf, setIsUploadingPdf] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -32,57 +48,87 @@ export default function Home() {
     const [showPatientPanel, setShowPatientPanel] = useState(true);
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
     const [isSampleInputOpen, setIsSampleInputOpen] = useState(false);
+    const [isConnectDataOpen, setIsConnectDataOpen] = useState(false);
     const [viewerGuideline, setViewerGuideline] = useState<NICEGuideline | null>(null);
+    const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
 
-    // Load default guideline on mount
+    // Load all NICE guidelines from public/guidelines/ on mount
     useEffect(() => {
-        setGuidelines([niceHypertensionGuideline]);
-        setActiveGuideline(niceHypertensionGuideline);
+        async function loadGuidelines() {
+            const loaded: NICEGuideline[] = [];
+            for (const file of GUIDELINE_FILES) {
+                try {
+                    const res = await fetch(`/guidelines/${file}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        loaded.push(data as NICEGuideline);
+                    }
+                } catch {
+                    console.warn(`Failed to load guideline: ${file}`);
+                }
+            }
+            if (loaded.length > 0) {
+                setGuidelines(loaded);
+                // No guideline selected by default — user picks after selecting a patient
+            } else {
+                // Fallback to hardcoded hypertension guideline (available but not selected)
+                setGuidelines([niceHypertensionGuideline]);
+            }
+        }
+        loadGuidelines();
     }, []);
-    const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([
-        {
-            id: "PT-204",
-            name: "Alex Morgan",
-            age: 45,
-            primaryConcern: "Type 2 Diabetes",
-            status: "Needs Attention",
-            lastUpdated: "15 May 2024",
-            clinician: "Dr. Priya Desai",
-            notes: "A1C trending upward; medication review scheduled for tomorrow.",
-        },
-        {
-            id: "PT-317",
-            name: "Jordan Lee",
-            age: 62,
-            primaryConcern: "Hypertensive Emergency",
-            status: "Critical",
-            lastUpdated: "15 May 2024",
-            clinician: "Dr. Olivia Ramirez",
-            notes:
-                "Receiving IV labetalol. Repeat vitals in 10 minutes and confirm renal panel.",
-        },
-        {
-            id: "PT-411",
-            name: "Samantha Chen",
-            age: 33,
-            primaryConcern: "Postpartum Hemorrhage",
-            status: "Active",
-            lastUpdated: "14 May 2024",
-            clinician: "Dr. Miguel Alvarez",
-            notes:
-                "Responding to uterotonics. Monitor hemoglobin and consult hematology if <7.",
-        },
-        {
-            id: "PT-522",
-            name: "Christopher Young",
-            age: 70,
-            primaryConcern: "Acute Heart Failure Exacerbation",
-            status: "Stable",
-            lastUpdated: "13 May 2024",
-            clinician: "Dr. Amina El-Sayed",
-            notes: "Diuresis effective. Plan transition to oral regimen tomorrow.",
-        },
-    ]);
+    const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([]);
+
+    // Load patients from backend on mount for persistence
+    const loadPatientsFromBackend = useCallback(async () => {
+        try {
+            const res = await fetch(`${BACKEND_HTTP_URL}/patients`);
+            if (!res.ok) return;
+            const patients = await res.json();
+            const records: PatientRecord[] = patients.map((p: {
+                id: string;
+                first_name: string;
+                last_name: string;
+                age: number;
+                gender?: string;
+                date_of_birth?: string;
+                nhs_number?: string;
+                conditions?: string[];
+                medications?: Array<{ name: string; dose?: string }>;
+                allergies?: string[];
+                clinical_notes?: Array<{ date: string; guideline: string; recommendation: string; urgency?: string; note?: string }>;
+                recent_vitals?: Record<string, string | number>;
+                updated_at?: string;
+            }) => ({
+                id: p.id,
+                backendId: p.id,
+                name: `${p.first_name} ${p.last_name}`,
+                age: p.age,
+                gender: p.gender,
+                dateOfBirth: p.date_of_birth,
+                nhsNumber: p.nhs_number,
+                primaryConcern: (p.conditions && p.conditions[0]) || "General",
+                status: "Needs Attention" as const,
+                lastUpdated: p.updated_at
+                    ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(p.updated_at))
+                    : formatLastUpdated(),
+                clinician: "Assigned clinician",
+                notes: (p.clinical_notes || []).filter((n: Record<string, string>) => n.note && !n.recommendation).map((n: Record<string, string>) => n.note).join("\n") || undefined,
+                conditions: p.conditions,
+                medications: p.medications,
+                allergies: p.allergies,
+                recentVitals: p.recent_vitals,
+                clinicalNotes: p.clinical_notes,
+            }));
+            setPatientRecords(records);
+        } catch {
+            // Backend unavailable — will use local state only
+        }
+    }, []);
+
+    useEffect(() => {
+        loadPatientsFromBackend();
+    }, [loadPatientsFromBackend]);
 
     const formatLastUpdated = () => {
         return new Intl.DateTimeFormat("en-GB", {
@@ -108,6 +154,13 @@ export default function Home() {
                 ...filtered,
             ];
         });
+
+        // Auto-select the newly created patient
+        setSelectedPatient({
+            ...record,
+            lastUpdated,
+        });
+        setSessionKey((prev) => prev + 1);
     };
 
     const handleGuidelineSelect = (guideline: AnyGuideline) => {
@@ -235,26 +288,6 @@ export default function Home() {
                             className="hidden sm:block h-6 w-px bg-gray-300"
                             aria-hidden="true"
                         ></div>
-                        <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2 w-full sm:w-auto">
-                            <button
-                                onClick={() => setMode("strict")}
-                                className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all shadow-sm hover:shadow ${mode === "strict"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-300"
-                                    }`}
-                            >
-                                📋 Strict
-                            </button>
-                            <button
-                                onClick={() => setMode("explain")}
-                                className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all shadow-sm hover:shadow ${mode === "explain"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-300"
-                                    }`}
-                            >
-                                💡 Explain
-                            </button>
-                        </div>
                         <button
                             onClick={() => setIsSampleInputOpen(true)}
                             className="px-5 py-2.5 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-300 transition-all shadow-sm hover:shadow"
@@ -471,14 +504,30 @@ export default function Home() {
                         <ChatPanel
                             key={sessionKey}
                             guideline={activeGuideline}
-                            mode={mode}
-                            onModeChange={setMode}
+                            allGuidelines={guidelines}
+                            selectedPatient={selectedPatient}
+                            onDiagnosisComplete={loadPatientsFromBackend}
                         />
                     }
                     rightPanel={
                         <PatientInfoPanel
                             records={patientRecords}
                             onAddPatient={() => setIsAddPatientOpen(true)}
+                            onConnect={() => setIsConnectDataOpen(true)}
+                            selectedPatientId={selectedPatient?.id}
+                            allGuidelines={guidelines}
+                            onSelectPatient={(patient) => {
+                                setSelectedPatient(patient);
+                                setSessionKey((prev) => prev + 1);
+                            }}
+                            onUpdatePatient={(updated) => {
+                                setPatientRecords((prev) =>
+                                    prev.map((p) => (p.id === updated.id ? updated : p))
+                                );
+                                if (selectedPatient?.id === updated.id) {
+                                    setSelectedPatient(updated);
+                                }
+                            }}
                             className="bg-white h-full w-full"
                         />
                     }
@@ -505,6 +554,11 @@ export default function Home() {
             <SampleInputModal
                 isOpen={isSampleInputOpen}
                 onClose={() => setIsSampleInputOpen(false)}
+            />
+            <ConnectDataModal
+                isOpen={isConnectDataOpen}
+                onClose={() => setIsConnectDataOpen(false)}
+                onImportComplete={() => loadPatientsFromBackend()}
             />
         </div>
     );

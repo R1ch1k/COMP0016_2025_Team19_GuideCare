@@ -1,0 +1,58 @@
+{
+  "n19": {
+    "variable": "signs_serious_illness_or_penetrating_wound"
+  },
+  "n25": {
+    "variable": "wild_or_exotic_animal_bite"
+  },
+  "n1": {
+    "variable": "bite_not_broken_skin"
+  },
+  "n3": {
+    "variable": "human_bite_broken_skin_not_drawn_blood"
+  },
+  "n5": {
+    "variable": "human_bite_broken_skin_drawn_blood"
+  },
+  "n7": {
+    "variable": "cat_bite_broken_skin_not_drawn_blood"
+  },
+  "n9": {
+    "variable": "cat_bite_broken_skin_drawn_blood"
+  },
+  "n15": {
+    "variable": "dog_bite_severe_tissue_damage_or_contamination"
+  },
+  "n17": {
+    "variable": "dog_bite_high_risk_area_or_person"
+  },
+  "n31": {
+    "type": "age_compare",
+    "variable": "age",
+    "threshold": 0.083,
+    "op": "<"
+  },
+  "n33": {
+    "type": "and",
+    "conditions": [
+      {
+        "variable": "pregnant"
+      },
+      {
+        "variable": "penicillin_allergy"
+      }
+    ]
+  },
+  "n27": {
+    "variable": "prophylaxis_required"
+  },
+  "n29": {
+    "variable": "penicillin_allergy"
+  },
+  "n21": {
+    "variable": "systemically_unwell_or_infection_not_responding"
+  },
+  "n23": {
+    "variable": "wound_not_improving_or_worsening"
+  }
+}

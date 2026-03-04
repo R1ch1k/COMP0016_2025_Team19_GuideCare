@@ -1,0 +1,84 @@
+{
+  "guideline_id": "NG112",
+  "name": "Urinary tract infection (recurrent): antimicrobial prescribing",
+  "version": "1.0",
+  "citation": "NICE Guideline NG112",
+  "citation_url": "https://www.nice.org.uk/guidance/ng112",
+  "rules": [
+    "IF a person aged 16 years and over presents with recurrent UTI THEN consider antiseptic prophylaxis with methenamine hippurate 1 g twice a day.",
+    "IF a person aged 16 years and over presents with recurrent UTI THEN consider first-choice antibiotics: Trimethoprim 200 mg single dose when exposed to a trigger, or 100 mg nightly; Nitrofurantoin (if eGFR ≥ 45 ml/min) 100 mg single dose when exposed to a trigger, or 50 to 100 mg nightly.",
+    "IF a person aged 16 years and over presents with recurrent UTI, resistant to first-choice antibiotics THEN consider second-choice antibiotics: Amoxicillin 500 mg single dose when exposed to a trigger, or 250 mg nightly; Cefalexin 500 mg single dose when exposed to a trigger, or 125 mg nightly.",
+    "IF a child under 3 months presents with recurrent UTI THEN refer to a paediatric specialist.",
+    "IF a child aged 3 months and over presents with recurrent UTI THEN, with specialist advice, consider first-choice antibiotics: Trimethoprim, or Nitrofurantoin (if eGFR ≥ 45 ml/min).",
+    "IF a child aged 3 months and over, resistant to first-choice antibiotics THEN consider second-choice antibiotics: Cefalexin, or Amoxicillin."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Person aged 16 years and over presents with recurrent UTI"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Consider antiseptic prophylaxis with methenamine hippurate 1 g twice a day"
+    },
+    {
+      "id": "n3",
+      "type": "action",
+      "text": "Consider first-choice antibiotics: Trimethoprim or Nitrofurantoin"
+    },
+    {
+      "id": "n4",
+      "type": "condition",
+      "text": "Resistance to first-choice antibiotics"
+    },
+    {
+      "id": "n5",
+      "type": "action",
+      "text": "Consider second-choice antibiotics: Amoxicillin or Cefalexin"
+    },
+    {
+      "id": "n6",
+      "type": "condition",
+      "text": "Child under 3 months presents with recurrent UTI"
+    },
+    {
+      "id": "n7",
+      "type": "action",
+      "text": "Refer to paediatric specialist"
+    },
+    {
+      "id": "n8",
+      "type": "condition",
+      "text": "Child aged 3 months and over presents with recurrent UTI"
+    },
+    {
+      "id": "n9",
+      "type": "action",
+      "text": "With specialist advice, consider first-choice antibiotics: Trimethoprim or Nitrofurantoin"
+    },
+    {
+      "id": "n10",
+      "type": "condition",
+      "text": "Resistance to first-choice antibiotics"
+    },
+    {
+      "id": "n11",
+      "type": "action",
+      "text": "Consider second-choice antibiotics: Cefalexin or Amoxicillin"
+    }
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n2", "to": "n3", "label": "next"},
+    {"from": "n3", "to": "n4", "label": "next"},
+    {"from": "n4", "to": "n5", "label": "yes"},
+    {"from": "n1", "to": "n6", "label": "no"},
+    {"from": "n6", "to": "n7", "label": "yes"},
+    {"from": "n6", "to": "n8", "label": "no"},
+    {"from": "n8", "to": "n9", "label": "yes"},
+    {"from": "n9", "to": "n10", "label": "next"},
+    {"from": "n10", "to": "n11", "label": "yes"}
+  ]
+}

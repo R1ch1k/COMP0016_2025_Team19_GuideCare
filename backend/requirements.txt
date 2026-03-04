@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=2.0,<3.0
+asyncpg
+httpx
+python-dotenv
+pydantic>=2.6,<3.0
+pydantic-settings>=2.2,<3.0
+alembic
+typing_extensions
+psycopg2-binary
+langgraph>=0.2.0
+openai>=1.0.0
+python-multipart
+openpyxl

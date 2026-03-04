@@ -1,0 +1,71 @@
+{
+  "guideline_id": "NG133",
+  "name": "Hypertension in pregnancy: diagnosis and management",
+  "version": "17/04/2023",
+  "citation": "NICE guideline on hypertension in pregnancy",
+  "citation_url": "https://www.nice.org.uk/guidance/ng133",
+  "rules": [
+    "IF a woman has 2 or more moderate risk factors OR 1 or more high risk factors for pre-eclampsia, THEN give aspirin 75 to 150 mg/day from 12 weeks until birth.",
+    "IF any previous instances of severe eclampsia, pre-eclampsia needing birth before 34 weeks, baby's birthweight below the 10th centile, intrauterine death, or placental abruption, THEN perform ultrasound fetal growth, amniotic fluid volume assessment, and umbilical artery doppler velocimetry starting at 28 to 30 weeks or at least 2 weeks before previous gestational age of onset if less than 28 weeks, and repeat every 4 weeks.",
+    "Use cardiotocography only if clinically indicated."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Woman has 2 or more moderate risk factors or 1 or more high risk factors"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Give aspirin 75 to 150 mg/day from 12 weeks until birth"
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "Any previous severe eclampsia, pre-eclampsia needing birth before 34 weeks, baby's birthweight below the 10th centile, intrauterine death, or placental abruption"
+    },
+    {
+      "id": "n4",
+      "type": "action",
+      "text": "Perform ultrasound fetal growth, amniotic fluid volume assessment, and umbilical artery doppler velocimetry"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "Clinically indicated for cardiotocography"
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Use cardiotocography"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": "yes"
+    },
+    {
+      "from": "n1",
+      "to": "n3",
+      "label": "no"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "label": "yes"
+    },
+    {
+      "from": "n3",
+      "to": "n5",
+      "label": "no"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "label": "yes"
+    }
+  ]
+}

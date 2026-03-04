@@ -88,5 +88,8 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   decision?: DecisionResult;
+  pathwayWalked?: string[];
+  selectedGuideline?: string;
+  isUrgent?: boolean;
 }
 

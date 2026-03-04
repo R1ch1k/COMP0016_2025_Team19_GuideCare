@@ -1,0 +1,138 @@
+{
+  "guideline_id": "NG81",
+  "name": "Chronic Open Angle Glaucoma Management",
+  "version": "January 2022",
+  "citation": "NICE Guideline NG81: Chronic Open Angle Glaucoma Management",
+  "citation_url": "http://www.nice.org.uk/guidance/NG81",
+  "rules": [
+    "IF person has chronic open angle glaucoma AND does not want SLT THEN offer a generic prostaglandin analogue (PGA).",
+    "IF person with chronic open angle glaucoma is waiting for SLT AND needs interim treatment THEN offer a generic PGA.",
+    "IF SLT is not suitable for a person with chronic open angle glaucoma THEN offer a generic PGA.",
+    "IF person cannot tolerate a pharmacological treatment THEN consider a medicine from another therapeutic class (beta-blocker, carbonic anhydrase inhibitor, or sympathomimetic) OR preservative-free eye drops IF allergic to preservatives OR has symptomatic ocular surface disease.",
+    "IF person's intraocular pressure (IOP) is not sufficiently reduced despite treatment with PGA THEN ask about adherence to treatment and eye drop instillation technique.",
+    "IF person has newly diagnosed chronic open angle glaucoma THEN topical medicines from different therapeutic classes may be needed at the same time.",
+    "IF person's IOP has not been reduced sufficiently after surgery THEN consider further glaucoma surgery OR cyclodiode laser OR 360° SLT OR pharmacological treatment.",
+    "IF person with advanced chronic open angle glaucoma prefers not to have surgery OR surgery is not suitable THEN offer treatment with medicines from different therapeutic classes.",
+    "IF person's adherence and eye drop instillation technique are satisfactory THEN offer further treatment and continue to monitor IOP.",
+    "IF effects of initial 360° SLT have reduced THEN consider a second 360° SLT."
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "condition",
+      "text": "Person has chronic open angle glaucoma and does not want SLT"
+    },
+    {
+      "id": "n2",
+      "type": "action",
+      "text": "Offer a generic prostaglandin analogue (PGA)"
+    },
+    {
+      "id": "n3",
+      "type": "condition",
+      "text": "Person with chronic open angle glaucoma is waiting for SLT and needs interim treatment"
+    },
+    {
+      "id": "n4",
+      "type": "condition",
+      "text": "SLT is not suitable for a person with chronic open angle glaucoma"
+    },
+    {
+      "id": "n5",
+      "type": "condition",
+      "text": "Person cannot tolerate a pharmacological treatment"
+    },
+    {
+      "id": "n6",
+      "type": "action",
+      "text": "Consider a medicine from another therapeutic class or preservative-free eye drops"
+    },
+    {
+      "id": "n7",
+      "type": "condition",
+      "text": "Person's IOP is not sufficiently reduced despite treatment with PGA"
+    },
+    {
+      "id": "n8",
+      "type": "action",
+      "text": "Ask about adherence to treatment and eye drop instillation technique"
+    },
+    {
+      "id": "n9",
+      "type": "condition",
+      "text": "Person has newly diagnosed chronic open angle glaucoma"
+    },
+    {
+      "id": "n10",
+      "type": "action",
+      "text": "Topical medicines from different therapeutic classes may be needed"
+    },
+    {
+      "id": "n11",
+      "type": "condition",
+      "text": "Person's IOP has not been reduced sufficiently after surgery"
+    },
+    {
+      "id": "n12",
+      "type": "action",
+      "text": "Consider further glaucoma surgery or cyclodiode laser or 360° SLT or pharmacological treatment"
+    },
+    {
+      "id": "n13",
+      "type": "condition",
+      "text": "Person with advanced chronic open angle glaucoma prefers not to have surgery or surgery is not suitable"
+    },
+    {
+      "id": "n14",
+      "type": "action",
+      "text": "Offer treatment with medicines from different therapeutic classes"
+    },
+    {
+      "id": "n15",
+      "type": "condition",
+      "text": "Person's adherence and eye drop instillation technique are satisfactory"
+    },
+    {
+      "id": "n16",
+      "type": "action",
+      "text": "Offer further treatment and monitor IOP"
+    },
+    {
+      "id": "n17",
+      "type": "condition",
+      "text": "Effects of initial 360° SLT have reduced"
+    },
+    {
+      "id": "n18",
+      "type": "action",
+      "text": "Consider a second 360° SLT"
+    },
+    {
+      "id": "n19",
+      "type": "action",
+      "text": "Continue current treatment and monitor IOP regularly"
+    }
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "label": "yes"},
+    {"from": "n1", "to": "n3", "label": "no"},
+    {"from": "n3", "to": "n2", "label": "yes"},
+    {"from": "n3", "to": "n4", "label": "no"},
+    {"from": "n4", "to": "n2", "label": "yes"},
+    {"from": "n4", "to": "n5", "label": "no"},
+    {"from": "n5", "to": "n6", "label": "yes"},
+    {"from": "n5", "to": "n7", "label": "no"},
+    {"from": "n7", "to": "n8", "label": "yes"},
+    {"from": "n7", "to": "n9", "label": "no"},
+    {"from": "n9", "to": "n10", "label": "yes"},
+    {"from": "n9", "to": "n11", "label": "no"},
+    {"from": "n11", "to": "n12", "label": "yes"},
+    {"from": "n11", "to": "n13", "label": "no"},
+    {"from": "n13", "to": "n14", "label": "yes"},
+    {"from": "n13", "to": "n15", "label": "no"},
+    {"from": "n15", "to": "n16", "label": "yes"},
+    {"from": "n15", "to": "n17", "label": "no"},
+    {"from": "n17", "to": "n18", "label": "yes"},
+    {"from": "n17", "to": "n19", "label": "no"}
+  ]
+}

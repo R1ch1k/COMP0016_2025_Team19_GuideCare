@@ -1,0 +1,20 @@
+{
+  "n1": {
+    "variable": "treatment_completed"
+  },
+  "n2": {
+    "variable": "remission_achieved"
+  },
+  "n4": {
+    "variable": "higher_risk_of_relapse"
+  },
+  "n7": {
+    "type": "treatment_type",
+    "variable": "acute_treatment",
+    "map": {
+      "psychological therapy alone": "yes, psychological therapy",
+      "antidepressants alone": "yes, antidepressants",
+      "combination therapy": "yes, combination"
+    }
+  }
+}
