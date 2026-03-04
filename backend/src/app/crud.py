@@ -46,8 +46,8 @@ async def get_patient(db: AsyncSession, patient_id: UUID):
     return q.scalars().first()
 
 
-async def list_patients(db: AsyncSession, limit: int = 100):
-    q = await db.execute(select(Patient).limit(limit))
+async def list_patients(db: AsyncSession):
+    q = await db.execute(select(Patient))
     return q.scalars().all()
 
 

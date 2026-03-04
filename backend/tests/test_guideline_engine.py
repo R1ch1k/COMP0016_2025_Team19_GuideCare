@@ -363,7 +363,6 @@ class TestFormatRecommendation:
         result = format_recommendation_template(
             "NG84", "33 year old", ["Give paracetamol"], {}, None
         )
-        assert "Based on NICE NG84" in result
         assert "paracetamol" in result.lower()
 
     def test_two_actions(self):

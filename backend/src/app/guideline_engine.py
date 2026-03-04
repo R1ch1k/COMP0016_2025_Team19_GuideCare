@@ -1025,7 +1025,7 @@ def format_recommendation_template(
 
     # Strip trailing periods from each part before joining to avoid ".."
     actions_text = ". ".join(p.rstrip(".") for p in parts)
-    recommendation = f"Based on NICE {guideline_id}, {actions_text}"
+    recommendation = actions_text
 
     # Append patient context
     age_match = re.search(r"(\d{1,3})\s*(?:year|yr|yo)", scenario.lower())

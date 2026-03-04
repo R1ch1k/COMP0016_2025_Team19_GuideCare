@@ -1264,9 +1264,9 @@ async def format_output_20b(
     if settings.OPENAI_API_KEY:
         try:
             name = patient.get("first_name", "the patient")
-            prompt = f"""Based on NICE guideline {guideline}, provide a concise clinical
-recommendation for {name}. Known variables: {json.dumps(variables)}.
-Keep it under 3 sentences and professional."""
+            prompt = f"""Provide a concise clinical recommendation for {name} based on
+guideline {guideline}. Known variables: {json.dumps(variables)}.
+Keep it under 3 sentences and professional. Do not start with 'Based on NICE'."""
 
             rec = await generate(prompt, max_tokens=200, temperature=0.0)
             return {"final_recommendation": rec, "citation": guideline}
@@ -1277,8 +1277,7 @@ Keep it under 3 sentences and professional."""
     name = patient.get("first_name", "there")
     return {
         "final_recommendation": (
-            f"Based on NICE guideline {guideline}, {name}, "
-            "please seek medical advice if symptoms worsen or persist."
+            f"{name}, please seek medical advice if symptoms worsen or persist."
         ),
         "citation": guideline,
     }

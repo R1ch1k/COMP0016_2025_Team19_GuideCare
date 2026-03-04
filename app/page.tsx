@@ -523,6 +523,14 @@ export default function Home() {
                                 setSelectedPatient(patient);
                                 setSessionKey((prev) => prev + 1);
                             }}
+                            onUpdatePatient={(updated) => {
+                                setPatientRecords((prev) =>
+                                    prev.map((p) => (p.id === updated.id ? updated : p))
+                                );
+                                if (selectedPatient?.id === updated.id) {
+                                    setSelectedPatient(updated);
+                                }
+                            }}
                             className="bg-white h-full w-full"
                         />
                     }

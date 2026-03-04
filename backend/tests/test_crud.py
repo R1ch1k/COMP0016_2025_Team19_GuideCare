@@ -86,9 +86,9 @@ class TestPatientCRUD:
         assert len(patients) >= 2
 
     @pytest.mark.asyncio
-    async def test_list_patients_with_limit(self, db_session):
-        patients = await list_patients(db_session, limit=1)
-        assert len(patients) <= 1
+    async def test_list_patients_no_limit(self, db_session):
+        patients = await list_patients(db_session)
+        assert len(patients) >= 1
 
 
 # ── conversations ─────────────────────────────────────────────────

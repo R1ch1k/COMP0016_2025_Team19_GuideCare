@@ -88,7 +88,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         },
         "expected_guideline": "NG136",
         "expected_urgency": "moderate",
-        "must_contain": ["NG136"],
+        "must_contain": ["hypertension"],
         "must_not_contain": [],
     },
     "NG136_jordan": {
@@ -99,7 +99,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         },
         "expected_guideline": "NG136",
         "expected_urgency": "moderate",
-        "must_contain": ["NG136", "Step 2"],
+        "must_contain": ["Step 2"],
         "must_not_contain": ["Step 1: Calcium channel blocker"],
     },
     "NG232": {
@@ -108,7 +108,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG232",
         "expected_urgency": "moderate",
-        "must_contain": ["NG232"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG84": {
@@ -117,7 +117,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG84",
         "expected_urgency": "urgent",
-        "must_contain": ["NG84"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG91": {
@@ -128,7 +128,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         },
         "expected_guideline": "NG91",
         "expected_urgency": "urgent",
-        "must_contain": ["NG91"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG112": {
@@ -139,7 +139,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         },
         "expected_guideline": "NG112",
         "expected_urgency": "moderate",
-        "must_contain": ["NG112"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG133": {
@@ -150,7 +150,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         },
         "expected_guideline": "NG133",
         "expected_urgency": "urgent",
-        "must_contain": ["NG133"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG184": {
@@ -159,7 +159,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG184",
         "expected_urgency": "urgent",
-        "must_contain": ["NG184"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG222": {
@@ -168,7 +168,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG222",
         "expected_urgency": "routine",
-        "must_contain": ["NG222"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG81_GLAUCOMA": {
@@ -177,7 +177,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG81_GLAUCOMA",
         "expected_urgency": "moderate",
-        "must_contain": ["NG81"],
+        "must_contain": [],
         "must_not_contain": [],
     },
     "NG81_HYPERTENSION": {
@@ -186,7 +186,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "answers": {},
         "expected_guideline": "NG81_HYPERTENSION",
         "expected_urgency": "routine",
-        "must_contain": ["NG81"],
+        "must_contain": [],
         "must_not_contain": [],
     },
 }

@@ -87,6 +87,7 @@ interface PatientInfoPanelProps {
   onConnect?: () => void;
   selectedPatientId?: string | null;
   onSelectPatient?: (patient: PatientRecord) => void;
+  onUpdatePatient?: (patient: PatientRecord) => void;
   allGuidelines?: AnyGuideline[];
   className?: string;
 }
@@ -130,12 +131,18 @@ export default function PatientInfoPanel({
   onConnect,
   selectedPatientId,
   onSelectPatient,
+  onUpdatePatient,
   allGuidelines,
   className,
 }: PatientInfoPanelProps) {
   const [diagnoses, setDiagnoses] = useState<DiagnosisRecord[]>([]);
   const [loadingDiagnoses, setLoadingDiagnoses] = useState(false);
   const [expandedDiagId, setExpandedDiagId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editConditions, setEditConditions] = useState("");
+  const [editMedications, setEditMedications] = useState("");
+  const [editAllergies, setEditAllergies] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedPatient = records.find((r) => r.id === selectedPatientId);
 
@@ -162,6 +169,53 @@ export default function PatientInfoPanel({
     fetchDiagnoses();
     return () => { cancelled = true; };
   }, [selectedPatientId, records]); // re-fetch when records change (after diagnosis update)
+
+  function startEditing() {
+    if (!selectedPatient) return;
+    setEditConditions((selectedPatient.conditions || []).join(", "));
+    setEditMedications(
+      (selectedPatient.medications || []).map((m) => (m.dose ? `${m.name} (${m.dose})` : m.name)).join(", ")
+    );
+    setEditAllergies((selectedPatient.allergies || []).join(", "));
+    setIsEditing(true);
+  }
+
+  async function saveEdits() {
+    if (!selectedPatient) return;
+    setIsSaving(true);
+    try {
+      const conditions = editConditions.split(",").map((s) => s.trim()).filter(Boolean);
+      const medications = editMedications.split(",").map((s) => {
+        const m = s.trim();
+        const match = m.match(/^(.+?)\s*\((.+?)\)$/);
+        return match ? { name: match[1].trim(), dose: match[2].trim() } : { name: m, dose: "" };
+      }).filter((m) => m.name);
+      const allergies = editAllergies.split(",").map((s) => s.trim()).filter(Boolean);
+
+      const patientId = selectedPatient.backendId || selectedPatient.id;
+      const res = await fetch(`${BACKEND_HTTP_URL}/patients/${patientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conditions, medications, allergies }),
+      });
+
+      if (res.ok) {
+        const updated: PatientRecord = {
+          ...selectedPatient,
+          conditions,
+          medications,
+          allergies,
+          primaryConcern: conditions[0] || selectedPatient.primaryConcern,
+        };
+        onUpdatePatient?.(updated);
+        setIsEditing(false);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <aside className={clsx("flex flex-col", className)}>
@@ -283,53 +337,118 @@ export default function PatientInfoPanel({
           {selectedPatient && (
             <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
               {/* Patient Detail Header */}
-              <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+              <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-blue-900">
                   {selectedPatient.name} — Clinical Summary
                 </h3>
+                {!isEditing && (
+                  <button
+                    onClick={startEditing}
+                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                    title="Edit patient details"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               <div className="px-4 py-3 space-y-3">
-                {/* Conditions */}
-                {selectedPatient.conditions && selectedPatient.conditions.length > 0 && (
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Conditions</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedPatient.conditions.map((c, i) => (
-                        <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full">
-                          {c}
-                        </span>
-                      ))}
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Conditions</label>
+                      <input
+                        type="text"
+                        value={editConditions}
+                        onChange={(e) => setEditConditions(e.target.value)}
+                        placeholder="Type 2 Diabetes, Hypertension, ..."
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Medications</label>
+                      <input
+                        type="text"
+                        value={editMedications}
+                        onChange={(e) => setEditMedications(e.target.value)}
+                        placeholder="Metformin (500mg), Amlodipine (5mg), ..."
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Allergies</label>
+                      <input
+                        type="text"
+                        value={editAllergies}
+                        onChange={(e) => setEditAllergies(e.target.value)}
+                        placeholder="Penicillin, Aspirin, ..."
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400">Separate items with commas. For medications with doses, use format: Name (Dose)</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveEdits}
+                        disabled={isSaving}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {isSaving ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
-                )}
+                ) : (
+                  <>
+                    {/* Conditions */}
+                    {selectedPatient.conditions && selectedPatient.conditions.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Conditions</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedPatient.conditions.map((c, i) => (
+                            <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full">
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Medications */}
-                {selectedPatient.medications && selectedPatient.medications.length > 0 && (
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Medications</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedPatient.medications.map((m, i) => (
-                        <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
-                          {m.name}{m.dose ? ` (${m.dose})` : ""}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    {/* Medications */}
+                    {selectedPatient.medications && selectedPatient.medications.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Medications</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedPatient.medications.map((m, i) => (
+                            <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                              {m.name}{m.dose ? ` (${m.dose})` : ""}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Allergies */}
-                {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Allergies</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedPatient.allergies.map((a, i) => (
-                        <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 rounded-full">
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                    {/* Allergies */}
+                    {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Allergies</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedPatient.allergies.map((a, i) => (
+                            <span key={i} className="inline-flex px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 rounded-full">
+                              {a}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Diagnosis History */}
