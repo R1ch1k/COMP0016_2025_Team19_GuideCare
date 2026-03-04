@@ -196,13 +196,13 @@ export default function PatientInfoPanel({
 
       const clinical_notes = editNotes.trim()
         ? [{ note: editNotes.trim(), date: new Date().toISOString().split("T")[0] }]
-        : undefined;
+        : [];
 
       const patientId = selectedPatient.backendId || selectedPatient.id;
       const res = await fetch(`${BACKEND_HTTP_URL}/patients/${patientId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conditions, medications, allergies, ...(clinical_notes && { clinical_notes }) }),
+        body: JSON.stringify({ conditions, medications, allergies, clinical_notes }),
       });
 
       if (res.ok) {
@@ -212,7 +212,7 @@ export default function PatientInfoPanel({
           medications,
           allergies,
           primaryConcern: conditions[0] || selectedPatient.primaryConcern,
-          notes: editNotes.trim() || selectedPatient.notes,
+          notes: editNotes.trim() || undefined,
         };
         onUpdatePatient?.(updated);
         setIsEditing(false);
