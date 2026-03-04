@@ -192,26 +192,11 @@ environment:
   - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
 ```
 
-### Using gpt-oss-20b (local model, for research / offline use)
+### Using a local model (for research / offline use)
 
-The test notebooks in `testing/` support running with a local 21B-parameter MoE model (3.6B active parameters) called gpt-oss-20b. This model runs on a single A100 GPU.
+The backend supports running with a local OpenAI-compatible model server for privacy-sensitive deployments where data must not leave the network.
 
-**To use in the test notebooks (Google Colab):**
-
-1. Open `testing/gpt_oss_20b_final_test_suite.ipynb` on Google Colab
-2. Select an A100 GPU runtime
-3. In the configuration cell, set `USE_API = False`
-4. The notebook will download and load the model in BF16
-5. All pipeline tests (variable extraction, clarification, recommendation formatting) will run against the local model
-
-**To switch back to API mode:**
-
-1. Set `USE_API = True`
-2. Set your API key in the `API_KEY` variable (or use Colab secrets)
-
-**To use in the backend (advanced):**
-
-The `docker-compose.yml` already includes environment variables for a local model:
+The `docker-compose.yml` includes environment variables for a local model:
 
 ```yaml
 environment:
@@ -226,7 +211,7 @@ To use a local model with the backend:
 3. Set `LOCAL_MODEL_URL` to your model's API endpoint
 4. The backend's `app/llm.py` will route requests to the local endpoint instead of OpenAI
 
-**Note:** The local model achieves comparable pipeline scores to GPT-4o on the test suite (see Test Results below), making it viable for privacy-sensitive deployments where data must not leave the network.
+**Note:** A local model is viable for privacy-sensitive deployments where data must not leave the network.
 
 ## Backend API
 
@@ -238,6 +223,7 @@ To use a local model with the backend:
 | GET | `/patients/{id}` | Get patient details |
 | GET | `/patients/{id}/context` | Get patient context for LLM |
 | POST | `/patients` | Create a patient |
+| PATCH | `/patients/{id}` | Update patient details (conditions, medications, allergies, notes) |
 | POST | `/patients/import` | Import patients from CSV/Excel file |
 | POST | `/conversations` | Start a new conversation |
 | GET | `/conversations/{id}` | Get conversation history |
@@ -273,10 +259,6 @@ guide-care/
 │   ├── AddPatientModal.tsx     # Manual patient creation form
 │   └── ui/                     # Shared UI components (shadcn)
 ├── lib/                        # Frontend utilities and types
-├── testing/                    # Test notebooks (Colab)
-│   ├── gpt_api_final_test_suite.ipynb
-│   ├── gpt_oss_20b_final_test_suite.ipynb
-│   └── medical_chatbot_triage_testing.ipynb
 ├── backend/
 │   ├── data/
 │   │   ├── guidelines/         # 10 NICE guideline JSON decision trees
@@ -347,20 +329,6 @@ The backend test suite (`backend/tests/`) includes:
 | `test_patients.py` | 1 | Legacy patient CRUD test |
 
 Tests use in-memory SQLite by default (no Docker needed). Set `TEST_DATABASE_URL` for PostgreSQL.
-
-### Test Notebooks (Colab)
-
-Three Colab notebooks in `testing/` validate the pipeline independently:
-
-| Notebook | Purpose | Requirements |
-|----------|---------|-------------|
-| `gpt_api_final_test_suite.ipynb` | Full pipeline validation using GPT-4o API | OpenAI API key |
-| `gpt_oss_20b_final_test_suite.ipynb` | Full pipeline validation using local model | A100 GPU on Colab |
-| `medical_chatbot_triage_testing.ipynb` | Triage urgency assessment + red flag detection | OpenAI API key |
-
-**Test coverage:** variable extraction (30 cases), multi-turn clarification (10 cases), recommendation formatting (10 cases), error handling (10 cases).
-
-**Latest API results:** 10/10 pipeline success, 85% extraction accuracy, 96.2% overall score.
 
 ## LangGraph Studio (Visual Pipeline Debugging)
 
