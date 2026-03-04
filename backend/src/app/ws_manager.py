@@ -14,18 +14,16 @@ from app.orchestration.runner import process_user_turn
 
 # Guideline ID → condition name mapping for auto-updating patient conditions
 _GUIDELINE_CONDITION_MAP = {
-    "nice_hypertension_ng136": "Hypertension",
-    "nice_sore_throat_ng84": "Sore throat",
-    "nice_urinary_tract_ng109": "Urinary tract infection",
-    "nice_head_injury_ng232": "Head injury",
-    "nice_meningitis_ng91": "Suspected meningitis",
-    "nice_croup_ng91": "Croup",
-    "nice_gastro_ng133": "Gastroenteritis",
-    "nice_fever_child_ng143": "Fever in children",
-    "nice_chronic_glaucoma_ng81": "Chronic glaucoma",
-    "nice_ocular_hypertension_ng81": "Ocular hypertension",
-    "nice_ibd_ng184": "Inflammatory bowel disease",
-    "nice_feverish_ng222": "Fever assessment",
+    "NG84": "Sore throat",
+    "NG91": "Otitis media",
+    "NG112": "Urinary tract infection",
+    "NG133": "Hypertension in pregnancy",
+    "NG136": "Hypertension",
+    "NG184": "Animal/human bite",
+    "NG222": "Depression",
+    "NG232": "Head injury",
+    "NG81_GLAUCOMA": "Chronic glaucoma",
+    "NG81_HYPERTENSION": "Ocular hypertension",
 }
 
 logger = logging.getLogger("ws_manager")

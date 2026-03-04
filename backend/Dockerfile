@@ -13,5 +13,5 @@ COPY data/ ./data
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["uvicorn", "main:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]
 

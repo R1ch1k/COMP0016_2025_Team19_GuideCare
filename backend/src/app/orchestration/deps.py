@@ -720,7 +720,7 @@ Which single guideline ID is most appropriate? Reply with ONLY the guideline ID.
         except Exception as e:
             logger.warning("LLM guideline selection failed: %s", e)
 
-    return "NG204"  # fallback
+    return "NG84"  # fallback: sore throat (most common presentation)
 
 
 # ===================================================================

@@ -78,7 +78,6 @@ export default function Home() {
         loadGuidelines();
     }, []);
     const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([]);
-    const [patientsLoaded, setPatientsLoaded] = useState(false);
 
     // Load patients from backend on mount for persistence
     const loadPatientsFromBackend = useCallback(async () => {
@@ -122,10 +121,8 @@ export default function Home() {
                 clinicalNotes: p.clinical_notes,
             }));
             setPatientRecords(records);
-        } catch (err) {
-            console.warn("Failed to load patients from backend:", err);
-        } finally {
-            setPatientsLoaded(true);
+        } catch {
+            // Backend unavailable — will use local state only
         }
     }, []);
 
