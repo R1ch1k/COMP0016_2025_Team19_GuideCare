@@ -31,7 +31,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # vercel
 .vercel
@@ -44,3 +47,18 @@ __pycache__/
 venv/
 .venv/
 .claude/
+
+# python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# databases
+*.sqlite
+*.db
+
+# jupyter
+.ipynb_checkpoints/
+
+# evaluation notebooks (dev artifacts)
+testing/
