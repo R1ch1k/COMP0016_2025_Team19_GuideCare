@@ -78,35 +78,33 @@ export default function ResizablePanel({
     setIsResizing(true);
   };
 
-  if (!showRightPanel) {
-    return <div className="h-full w-full">{leftPanel}</div>;
-  }
-
   return (
     <div
       ref={containerRef}
       className="h-full flex flex-col lg:flex-row relative"
     >
-      {/* Left Panel */}
+      {/* Left Panel — always mounted so chat state is preserved */}
       <div className="flex-1 overflow-hidden border-b lg:border-b-0 border-gray-200">
         {leftPanel}
       </div>
 
-      {/* Resize Handle */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="hidden lg:block w-1 bg-gray-200 hover:bg-blue-500 cursor-col-resize transition-colors relative group"
-        style={{ flexShrink: 0 }}
-      >
-        {/* Visual indicator on hover */}
-        <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500/20 transition-colors" />
-      </div>
+      {/* Resize Handle — hidden when right panel is closed */}
+      {showRightPanel && (
+        <div
+          onMouseDown={handleMouseDown}
+          className="hidden lg:block w-1 bg-gray-200 hover:bg-blue-500 cursor-col-resize transition-colors relative group"
+          style={{ flexShrink: 0 }}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500/20 transition-colors" />
+        </div>
+      )}
 
-      {/* Right Panel */}
+      {/* Right Panel — hidden via CSS, not unmounted */}
       <div
-        className="bg-white border-t lg:border-t-0 lg:border-l border-gray-200 h-80 lg:h-full w-full shrink-0 overflow-hidden"
+        className="bg-white border-t lg:border-t-0 lg:border-l border-gray-200 h-80 lg:h-full shrink-0 overflow-hidden"
         style={{
-          width: isLargeScreen ? `${rightWidth}px` : "100%",
+          width: showRightPanel ? (isLargeScreen ? `${rightWidth}px` : "100%") : "0px",
+          display: showRightPanel ? undefined : "none",
         }}
       >
         {rightPanel}
