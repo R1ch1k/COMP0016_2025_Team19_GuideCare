@@ -142,6 +142,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
     const [isExplanationOpen, setIsExplanationOpen] = useState(false);
     const [wsConnected, setWsConnected] = useState(false);
     const [backendPatientId, setBackendPatientId] = useState<string | null>(null);
+    const [conversationComplete, setConversationComplete] = useState(false);
     const [nodesVisited, setNodesVisited] = useState<string[]>([]);
     const [pipelineMeta, setPipelineMeta] = useState<{
         selectedGuideline?: string;
@@ -287,6 +288,11 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                     // Notify parent that a diagnosis completed so patient records refresh
                     if (payload.type === "final" || isUrgent) {
                         onDiagnosisComplete?.();
+                        setConversationComplete(true);
+                    }
+                    // Follow-up answers reset the complete flag so further follow-ups work
+                    if (payload.type === "followup") {
+                        setConversationComplete(true);
                     }
                 }
             } catch (err) {
@@ -435,13 +441,14 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
         setStreamingMessage("");
         setNodesVisited([]);
         setPipelineMeta({});
+        setConversationComplete(false);
         initializedRef.current = false;
         // Small delay so the backend processes the close before we reconnect
         setTimeout(() => setSessionId(Date.now()), 150);
     }, []);
 
     // Send via WebSocket (backend LangGraph pipeline)
-    const sendViaWebSocket = (text: string) => {
+    const sendViaWebSocket = (text: string, isFollowup: boolean = false) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
             console.error("WebSocket not connected");
             return;
@@ -450,6 +457,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
         wsRef.current.send(JSON.stringify({
             role: "user",
             content: text,
+            ...(isFollowup && { meta: { followup: true } }),
         }));
     };
 
@@ -535,7 +543,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
 
         if (useBackend) {
             // Send through backend LangGraph pipeline
-            sendViaWebSocket(input);
+            sendViaWebSocket(input, conversationComplete);
         } else {
             // Fallback: direct OpenAI via Next.js API route
             await sendViaFallback(userMessage);
@@ -706,14 +714,21 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                             New Conversation
                         </PromptInputButton>
                     </div>
+                    {conversationComplete && (
+                        <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-700">
+                            <span>Recommendation given — type a follow-up question, or start a new consultation above.</span>
+                        </div>
+                    )}
                     <PromptInput onSubmit={handleSend}>
                         <PromptInputTextarea
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             disabled={isLoading}
-                            placeholder={selectedPatient
-                                ? `Describe ${selectedPatient.name}'s symptoms...`
-                                : "Select a patient, then describe their symptoms..."
+                            placeholder={conversationComplete
+                                ? "Ask a follow-up question about this recommendation..."
+                                : selectedPatient
+                                    ? `Describe ${selectedPatient.name}'s symptoms...`
+                                    : "Select a patient, then describe their symptoms..."
                             }
                         />
                         <PromptInputToolbar>
