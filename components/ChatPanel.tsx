@@ -290,7 +290,7 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
                         onDiagnosisComplete?.();
                         setConversationComplete(true);
                     }
-                    // Follow-up answers reset the complete flag so further follow-ups work
+                    // Follow-up answers keep conversation marked complete so further follow-ups work
                     if (payload.type === "followup") {
                         setConversationComplete(true);
                     }
@@ -320,6 +320,11 @@ export default function ChatPanel({ guideline, allGuidelines, selectedPatient, o
 
     // Connect/reconnect WebSocket when backend patient ID changes
     useEffect(() => {
+        // Reset conversation-scoped state when switching patients
+        setConversationComplete(false);
+        setNodesVisited([]);
+        setPipelineMeta({});
+
         if (backendPatientId) {
             connectWebSocket(backendPatientId);
         }

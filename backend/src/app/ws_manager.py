@@ -108,12 +108,14 @@ class ConnectionManager:
                 logger.info("Closed conversation %s for patient %s", conv.id, pid)
 
     async def _get_latest_recommendation(self, pid: UUID) -> str | None:
-        """Return the final_recommendation from the most recent completed conversation."""
+        """Return the final_recommendation from the most recent completed conversation that has one."""
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(Conversation)
                 .where(Conversation.patient_id == pid)
                 .where(Conversation.status == "completed")
+                .where(Conversation.final_recommendation.isnot(None))
+                .where(Conversation.final_recommendation != "")
                 .order_by(Conversation.updated_at.desc())
                 .limit(1)
             )
@@ -268,6 +270,19 @@ class ConnectionManager:
                     "meta": {},
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
+                # Persist follow-up assistant message to conversation history
+                async with lock:
+                    async with AsyncSessionLocal() as db:
+                        try:
+                            conv2 = await db.get(Conversation, UUID(str(conv.id)))
+                            if conv2:
+                                msgs = conv2.messages or []
+                                msgs.append(followup_msg)
+                                conv2.messages = msgs
+                                conv2.updated_at = datetime.now(timezone.utc)
+                                await db.commit()
+                        except Exception:
+                            logger.exception("Failed to persist follow-up assistant message")
                 await self.broadcast(
                     patient_id,
                     {
