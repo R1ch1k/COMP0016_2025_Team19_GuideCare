@@ -72,19 +72,22 @@ export default function GeneralChatPanel() {
         abortControllerRef.current = new AbortController();
 
         try {
+            // Exclude the static welcome message — it's UI only, not real history
+            const apiMessages = updatedMessages
+                .filter((m) => !(m.role === "assistant" && m.content === WELCOME_MESSAGE.content))
+                .map((m) => ({ role: m.role, content: m.content }));
+
             const response = await fetch("/api/general-chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: updatedMessages.map((m) => ({
-                        role: m.role,
-                        content: m.content,
-                    })),
-                }),
+                body: JSON.stringify({ messages: apiMessages }),
                 signal: abortControllerRef.current.signal,
             });
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({}));
+                throw new Error(errorBody.error || `Server error ${response.status}`);
+            }
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
@@ -114,11 +117,13 @@ export default function GeneralChatPanel() {
             setStreamingMessage("");
         } catch (error) {
             if (error instanceof Error && error.name === "AbortError") return;
+            const detail = error instanceof Error ? error.message : "Unknown error";
+            console.error("GeneralChat error:", detail);
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "assistant",
-                    content: "Sorry, I couldn't process that request. Please check your connection and try again.",
+                    content: `Sorry, I couldn't process that request. (${detail})`,
                 },
             ]);
             setStreamingMessage("");
