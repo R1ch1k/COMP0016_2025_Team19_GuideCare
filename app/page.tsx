@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ChatPanel from "@/components/ChatPanel";
+import GeneralChatPanel from "@/components/GeneralChatPanel";
 import { AnyGuideline, NICEGuideline } from "@/lib/types";
 import PatientInfoPanel, {
     PatientRecord,
@@ -10,7 +11,7 @@ import AddPatientModal from "@/components/AddPatientModal";
 import ResizablePanel from "@/components/ResizablePanel";
 import GuidelineViewer from "@/components/GuidelineViewer";
 import { niceHypertensionGuideline } from "@/lib/guidelines/nice-hypertension";
-import { Eye } from "lucide-react";
+import { Eye, Stethoscope, MessageSquare } from "lucide-react";
 import SampleInputModal from "@/components/SampleInputModal";
 import ConnectDataModal from "@/components/ConnectDataModal";
 
@@ -46,6 +47,7 @@ export default function Home() {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showPatientPanel, setShowPatientPanel] = useState(true);
+    const [appMode, setAppMode] = useState<"consultation" | "general">("consultation");
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
     const [isSampleInputOpen, setIsSampleInputOpen] = useState(false);
     const [isConnectDataOpen, setIsConnectDataOpen] = useState(false);
@@ -255,14 +257,36 @@ export default function Home() {
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-4 shadow-sm">
                 <div className="max-w-7xl mx-auto flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-start gap-4 min-w-0 flex-1">
-                        <div className="min-w-0">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <div className="min-w-0 hidden md:block">
                             <h1 className="text-lg font-bold text-gray-900">
                                 Clinical Decision Support
                             </h1>
-                            <p className="text-sm text-gray-600 mt-0.5 truncate">
-                                {activeGuideline?.name || "Select a guideline"}
-                            </p>
+                        </div>
+                        {/* Mode toggle */}
+                        <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 shrink-0">
+                            <button
+                                onClick={() => setAppMode("consultation")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                    appMode === "consultation"
+                                        ? "bg-white text-blue-700 shadow-sm border border-blue-100"
+                                        : "text-gray-500 hover:text-gray-700"
+                                }`}
+                            >
+                                <Stethoscope className="w-3.5 h-3.5" />
+                                Consultation
+                            </button>
+                            <button
+                                onClick={() => setAppMode("general")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                    appMode === "general"
+                                        ? "bg-white text-purple-700 shadow-sm border border-purple-100"
+                                        : "text-gray-500 hover:text-gray-700"
+                                }`}
+                            >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                General Chat
+                            </button>
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
@@ -497,45 +521,52 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Main Chat Interface */}
+            {/* Main Content — both modes always mounted to preserve state */}
             <div className="flex-1 overflow-hidden">
-                <ResizablePanel
-                    leftPanel={
-                        <ChatPanel
-                            key={sessionKey}
-                            guideline={activeGuideline}
-                            allGuidelines={guidelines}
-                            selectedPatient={selectedPatient}
-                            onDiagnosisComplete={loadPatientsFromBackend}
-                        />
-                    }
-                    rightPanel={
-                        <PatientInfoPanel
-                            records={patientRecords}
-                            onAddPatient={() => setIsAddPatientOpen(true)}
-                            onConnect={() => setIsConnectDataOpen(true)}
-                            selectedPatientId={selectedPatient?.id}
-                            allGuidelines={guidelines}
-                            onSelectPatient={(patient) => {
-                                setSelectedPatient(patient);
-                                setSessionKey((prev) => prev + 1);
-                            }}
-                            onUpdatePatient={(updated) => {
-                                setPatientRecords((prev) =>
-                                    prev.map((p) => (p.id === updated.id ? updated : p))
-                                );
-                                if (selectedPatient?.id === updated.id) {
-                                    setSelectedPatient(updated);
-                                }
-                            }}
-                            className="bg-white h-full w-full"
-                        />
-                    }
-                    showRightPanel={showPatientPanel}
-                    defaultRightWidth={600}
-                    minRightWidth={400}
-                    maxRightWidth={900}
-                />
+                {/* Consultation mode */}
+                <div className={`h-full ${appMode === "consultation" ? "" : "hidden"}`}>
+                    <ResizablePanel
+                        leftPanel={
+                            <ChatPanel
+                                key={sessionKey}
+                                guideline={activeGuideline}
+                                allGuidelines={guidelines}
+                                selectedPatient={selectedPatient}
+                                onDiagnosisComplete={loadPatientsFromBackend}
+                            />
+                        }
+                        rightPanel={
+                            <PatientInfoPanel
+                                records={patientRecords}
+                                onAddPatient={() => setIsAddPatientOpen(true)}
+                                onConnect={() => setIsConnectDataOpen(true)}
+                                selectedPatientId={selectedPatient?.id}
+                                allGuidelines={guidelines}
+                                onSelectPatient={(patient) => {
+                                    setSelectedPatient(patient);
+                                    setSessionKey((prev) => prev + 1);
+                                }}
+                                onUpdatePatient={(updated) => {
+                                    setPatientRecords((prev) =>
+                                        prev.map((p) => (p.id === updated.id ? updated : p))
+                                    );
+                                    if (selectedPatient?.id === updated.id) {
+                                        setSelectedPatient(updated);
+                                    }
+                                }}
+                                className="bg-white h-full w-full"
+                            />
+                        }
+                        showRightPanel={showPatientPanel}
+                        defaultRightWidth={600}
+                        minRightWidth={400}
+                        maxRightWidth={900}
+                    />
+                </div>
+                {/* General chat mode — always mounted so history is preserved */}
+                <div className={`h-full ${appMode === "general" ? "" : "hidden"}`}>
+                    <GeneralChatPanel />
+                </div>
             </div>
             {isAddPatientOpen && (
                 <AddPatientModal

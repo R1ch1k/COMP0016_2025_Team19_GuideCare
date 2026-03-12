@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.models import Conversation, Diagnosis, Patient
 from app.db.session import AsyncSessionLocal
+from app.llm import generate
 from app.orchestration.runner import process_user_turn
 
 # Guideline ID → condition name mapping for auto-updating patient conditions
@@ -105,6 +106,32 @@ class ConnectionManager:
                 conv.updated_at = datetime.now(timezone.utc)
                 await db.commit()
                 logger.info("Closed conversation %s for patient %s", conv.id, pid)
+
+    async def _get_latest_recommendation(self, pid: UUID) -> str | None:
+        """Return the final_recommendation from the most recent completed conversation that has one."""
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Conversation)
+                .where(Conversation.patient_id == pid)
+                .where(Conversation.status == "completed")
+                .where(Conversation.final_recommendation.isnot(None))
+                .where(Conversation.final_recommendation != "")
+                .order_by(Conversation.updated_at.desc())
+                .limit(1)
+            )
+            conv = result.scalars().first()
+            return conv.final_recommendation if conv else None
+
+    async def _answer_followup(self, question: str, prior_recommendation: str) -> str:
+        """Answer a follow-up question in context of the previous recommendation."""
+        prompt = (
+            f"A doctor has received the following clinical recommendation based on NICE guidelines:\n\n"
+            f"{prior_recommendation}\n\n"
+            f"The doctor now asks: {question}\n\n"
+            f"Answer concisely and professionally in the context of the above recommendation. "
+            f"Do not re-run a new clinical assessment or repeat the full recommendation unless asked."
+        )
+        return await generate(prompt, max_tokens=300, temperature=0.0)
 
     async def _update_patient_from_diagnosis(self, db, pid: UUID, event: dict) -> None:
         """Enrich the patient record with data from a completed diagnosis.
@@ -225,6 +252,47 @@ class ConnectionManager:
             patient_id,
             {"type": "message", "message": user_record, "conversation_id": str(conv.id)},
         )
+
+        # Follow-up mode: answer in context of prior recommendation, skip pipeline
+        is_followup = (message.get("meta") or {}).get("followup", False)
+        if is_followup:
+            prior = await self._get_latest_recommendation(pid)
+            if prior:
+                try:
+                    answer = await self._answer_followup(user_record["content"], prior)
+                except Exception:
+                    logger.exception("Follow-up LLM call failed")
+                    answer = "I'm sorry, I wasn't able to answer that follow-up. Please try again."
+                followup_msg = {
+                    "id": str(uuid4()),
+                    "role": "assistant",
+                    "content": answer,
+                    "meta": {},
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+                # Persist follow-up assistant message to conversation history
+                async with lock:
+                    async with AsyncSessionLocal() as db:
+                        try:
+                            conv2 = await db.get(Conversation, UUID(str(conv.id)))
+                            if conv2:
+                                msgs = conv2.messages or []
+                                msgs.append(followup_msg)
+                                conv2.messages = msgs
+                                conv2.updated_at = datetime.now(timezone.utc)
+                                await db.commit()
+                        except Exception:
+                            logger.exception("Failed to persist follow-up assistant message")
+                await self.broadcast(
+                    patient_id,
+                    {
+                        "type": "assistant_event",
+                        "message": followup_msg,
+                        "conversation_id": str(conv.id),
+                        "payload": {"type": "followup"},
+                    },
+                )
+                return
 
         # Run orchestration for this turn (no DB lock)
         try:

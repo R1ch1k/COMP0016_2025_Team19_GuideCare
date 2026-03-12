@@ -11,11 +11,14 @@ from app.crud import (
     create_patient,
     get_patient,
     list_patients,
+    update_patient,
+    get_patient_diagnoses,
     start_conversation,
     get_conversation,
     append_message_to_conversation,
 )
-from app.schemas import PatientCreate
+from app.db.models import Diagnosis
+from app.schemas import PatientCreate, PatientUpdate
 
 
 # ── compute_age ───────────────────────────────────────────────────
@@ -153,3 +156,100 @@ class TestConversationCRUD:
         msg2 = {"role": "assistant", "content": "What is the FeverPAIN score?"}
         updated = await append_message_to_conversation(db_session, updated, msg2)
         assert len(updated.messages) == 2
+
+
+# ── update_patient ─────────────────────────────────────────────────
+
+class TestUpdatePatient:
+    @pytest.mark.asyncio
+    async def test_update_conditions(self, db_session):
+        patient = await create_patient(
+            db_session,
+            PatientCreate(
+                nhs_number="UPD-001",
+                first_name="Update",
+                last_name="Test",
+                date_of_birth=date(1990, 1, 1),
+                conditions=["Asthma"],
+            ),
+        )
+        updated = await update_patient(
+            db_session,
+            patient.id,
+            PatientUpdate(conditions=["Asthma", "Hypertension"]),
+        )
+        assert updated is not None
+        assert "Hypertension" in updated.conditions
+        assert updated.first_name == "Update"  # unchanged fields preserved
+
+    @pytest.mark.asyncio
+    async def test_update_allergies(self, db_session):
+        patient = await create_patient(
+            db_session,
+            PatientCreate(
+                nhs_number="UPD-002",
+                first_name="Allergy",
+                last_name="Test",
+                date_of_birth=date(1985, 6, 1),
+            ),
+        )
+        updated = await update_patient(
+            db_session,
+            patient.id,
+            PatientUpdate(allergies=["Penicillin", "Sulfa"]),
+        )
+        assert updated is not None
+        assert "Penicillin" in updated.allergies
+
+    @pytest.mark.asyncio
+    async def test_update_nonexistent(self, db_session):
+        result = await update_patient(
+            db_session,
+            str(uuid4()),
+            PatientUpdate(conditions=["Asthma"]),
+        )
+        assert result is None
+
+
+# ── get_patient_diagnoses ──────────────────────────────────────────
+
+class TestGetPatientDiagnoses:
+    @pytest.mark.asyncio
+    async def test_empty(self, db_session):
+        patient = await create_patient(
+            db_session,
+            PatientCreate(
+                nhs_number="DIAG-EMPTY-001",
+                first_name="NoDiag",
+                last_name="Patient",
+                date_of_birth=date(1990, 1, 1),
+            ),
+        )
+        diagnoses = await get_patient_diagnoses(db_session, patient.id)
+        assert diagnoses == []
+
+    @pytest.mark.asyncio
+    async def test_with_data(self, db_session):
+        patient = await create_patient(
+            db_session,
+            PatientCreate(
+                nhs_number="DIAG-DATA-001",
+                first_name="HasDiag",
+                last_name="Patient",
+                date_of_birth=date(1975, 3, 15),
+            ),
+        )
+        diag = Diagnosis(
+            patient_id=str(patient.id),
+            selected_guideline="NG84",
+            final_recommendation="Consider antibiotic prescription.",
+            urgency="moderate",
+            pathway_walked=["n1(yes)", "n3(action)"],
+            extracted_variables={"age": 50, "fever": 38.5},
+        )
+        db_session.add(diag)
+        await db_session.commit()
+
+        diagnoses = await get_patient_diagnoses(db_session, patient.id)
+        assert len(diagnoses) >= 1
+        assert diagnoses[0].selected_guideline == "NG84"
