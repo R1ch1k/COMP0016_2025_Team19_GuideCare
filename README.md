@@ -142,6 +142,9 @@ Open http://localhost:3000 in your browser.
 
 ### 3. Use the application
 
+The application has two modes, toggled via the pill switcher in the top-left of the header:
+
+**Consultation mode (🩺)** — patient-specific NICE guideline pipeline:
 1. Select a patient from the sidebar (or import your own via the **Connect** button)
 2. Describe symptoms in the chat (e.g. "patient has a sore throat, 38.5C fever, no cough")
 3. The system will:
@@ -151,7 +154,14 @@ Open http://localhost:3000 in your browser.
    - Ask clarification questions if variables are missing
    - Traverse the guideline decision tree
    - Return the evidence-based recommendation with the decision path
-4. Completed diagnoses are automatically saved and can be exported via the API
+4. After a recommendation, you can ask follow-up questions in the same chat without restarting the pipeline
+5. Completed diagnoses are automatically saved and can be exported via the API
+
+**General Chat mode (💬)** — a persistent ChatGPT-style assistant for general clinical queries:
+- Ask any medical question: guidelines, drug interactions, clinical reasoning, score interpretation
+- Chat history is preserved when switching to Consultation mode and back
+- Use the **Clear chat** button to start a fresh conversation
+- Suggested starter questions are shown on a fresh chat
 
 ## Importing Patient Data
 
@@ -326,11 +336,13 @@ The server streams events back including triage results, clarification questions
 ```
 guide-care/
 ├── app/                        # Next.js frontend pages
-│   ├── page.tsx                # Main application page
-│   ├── api/chat/route.ts       # Legacy chat API route
+│   ├── page.tsx                # Main application page (Consultation + General Chat modes)
+│   ├── api/chat/route.ts       # Legacy guideline-specific chat API route
+│   ├── api/general-chat/route.ts # General clinical assistant API route (no guideline required)
 │   └── api/parse-pdf/route.ts  # PDF guideline parser
 ├── components/
-│   ├── ChatPanel.tsx           # Main chat interface with WebSocket
+│   ├── ChatPanel.tsx           # Consultation chat interface with WebSocket + LangGraph pipeline
+│   ├── GeneralChatPanel.tsx    # Persistent general-purpose clinical assistant chat
 │   ├── PipelineViewer.tsx      # Real-time LangGraph node visualization
 │   ├── PatientInfoPanel.tsx    # Patient details sidebar
 │   ├── ConnectDataModal.tsx    # Data import modal (CSV/Excel upload)
@@ -366,13 +378,13 @@ guide-care/
 │   │       ├── crud.py         # Database CRUD operations
 │   │       ├── seed.py         # Sample patient data seeder
 │   │       └── ws_manager.py   # WebSocket manager + diagnosis auto-persist
-│   ├── tests/                  # Backend test suite (147 tests)
+│   ├── tests/                  # Backend test suite (161 tests)
 │   │   ├── conftest.py             # Fixtures: in-memory SQLite, async client
 │   │   ├── test_guideline_engine.py # 79 unit tests for engine functions
 │   │   ├── test_pipeline_e2e.py    # 35 E2E tests across all 10 guidelines
-│   │   ├── test_api.py            # 15 HTTP endpoint integration tests
+│   │   ├── test_api.py            # 24 HTTP endpoint integration tests
 │   │   ├── test_orchestration.py  # 8 LangGraph pipeline tests (mocked LLM)
-│   │   ├── test_crud.py          # 8 database CRUD tests
+│   │   ├── test_crud.py          # 15 database CRUD tests
 │   │   └── test_patients.py      # 1 legacy patient test
 │   ├── langgraph.json          # LangGraph Studio config
 │   ├── Dockerfile
@@ -387,7 +399,7 @@ guide-care/
 
 ## Testing
 
-### Backend Tests (147 tests)
+### Backend Tests (161 tests)
 
 ```bash
 cd backend
@@ -403,12 +415,14 @@ The backend test suite (`backend/tests/`) includes:
 |------|-------|----------|
 | `test_guideline_engine.py` | 79 | All 19 pure functions: parse_bp, evaluate_condition, traverse_graph, format_recommendation, fix_variable_extraction, etc. |
 | `test_pipeline_e2e.py` | 35 | All 10 NICE guidelines (11 scenarios): graph traversal, recommendation content, no double periods |
-| `test_api.py` | 15 | HTTP endpoints: patients CRUD, CSV import, conversations, diagnoses export |
+| `test_api.py` | 24 | HTTP endpoints: patients CRUD, PATCH, CSV import, conversations, diagnoses list/get/export with real data |
 | `test_orchestration.py` | 8 | LangGraph pipeline with mocked LLM: triage routing, clarification, variable extraction, full pipeline |
-| `test_crud.py` | 8 | Database CRUD: compute_age, patient/conversation/message operations |
+| `test_crud.py` | 15 | Database CRUD: compute_age, patient/conversation/message operations, update_patient, get_patient_diagnoses |
 | `test_patients.py` | 1 | Legacy patient CRUD test |
 
 Tests use in-memory SQLite by default (no Docker needed). Set `TEST_DATABASE_URL` for PostgreSQL.
+
+Overall coverage: **55%** — core business logic (`guideline_engine`, `crud`, `schemas`, `graph`) is at 84–100%. The LLM/WebSocket layer (`deps.py`, `ws_manager.py`, `llm.py`) is at 12–17% as these require live API calls and are covered by the E2E test suite instead.
 
 ## LangGraph Studio (Visual Pipeline Debugging)
 
@@ -457,6 +471,8 @@ When using Docker, all variables are set in the root `.env` file (copied from `.
 |----------|----------|-------------|
 | NEXT_PUBLIC_BACKEND_URL | No | Backend URL (defaults to http://localhost:8000) |
 | TEAM_PASSWORD | No | Login password (defaults to changeme123) |
+| OPENAI_API_KEY | Yes (for General Chat) | OpenAI API key — used by the `/api/general-chat` Next.js route |
+| OPENAI_MODEL | No | OpenAI model for General Chat (defaults to gpt-4o) |
 
 ## Patient Data Privacy
 
