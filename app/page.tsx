@@ -267,6 +267,7 @@ export default function Home() {
                         <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 shrink-0">
                             <button
                                 onClick={() => setAppMode("consultation")}
+                                aria-pressed={appMode === "consultation"}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                                     appMode === "consultation"
                                         ? "bg-white text-blue-700 shadow-sm border border-blue-100"
@@ -278,6 +279,7 @@ export default function Home() {
                             </button>
                             <button
                                 onClick={() => setAppMode("general")}
+                                aria-pressed={appMode === "general"}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                                     appMode === "general"
                                         ? "bg-white text-purple-700 shadow-sm border border-purple-100"

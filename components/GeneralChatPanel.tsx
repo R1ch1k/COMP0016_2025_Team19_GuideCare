@@ -96,22 +96,53 @@ export default function GeneralChatPanel() {
             if (!reader) throw new Error("No response body");
 
             let accumulated = "";
+            let sseBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                for (const line of chunk.split("\n")) {
-                    if (line.startsWith("data: ")) {
-                        const data = line.slice(6);
-                        if (data === "[DONE]") continue;
-                        try {
-                            const parsed = JSON.parse(data);
-                            if (parsed.content) {
-                                accumulated += parsed.content;
-                                setStreamingMessage(accumulated);
-                            }
-                        } catch { /* skip */ }
+                sseBuffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+
+                // Split on double-newline SSE event boundaries; keep any partial trailing event
+                const events = sseBuffer.split("\n\n");
+                sseBuffer = events.pop() || "";
+
+                for (const event of events) {
+                    let dataPayload = "";
+                    for (const line of event.split("\n")) {
+                        if (line.startsWith("data: ")) {
+                            const data = line.slice(6).trim();
+                            if (data === "[DONE]") continue;
+                            dataPayload += data;
+                        }
                     }
+                    if (!dataPayload) continue;
+                    try {
+                        const parsed = JSON.parse(dataPayload);
+                        if (parsed.content) {
+                            accumulated += parsed.content;
+                            setStreamingMessage(accumulated);
+                        }
+                    } catch { /* skip malformed */ }
+                }
+            }
+
+            // Flush any remaining buffered data after stream ends
+            if (sseBuffer) {
+                let dataPayload = "";
+                for (const line of sseBuffer.split("\n")) {
+                    if (line.startsWith("data: ")) {
+                        const data = line.slice(6).trim();
+                        if (data !== "[DONE]") dataPayload += data;
+                    }
+                }
+                if (dataPayload) {
+                    try {
+                        const parsed = JSON.parse(dataPayload);
+                        if (parsed.content) {
+                            accumulated += parsed.content;
+                            setStreamingMessage(accumulated);
+                        }
+                    } catch { /* skip malformed */ }
                 }
             }
 
@@ -153,11 +184,7 @@ export default function GeneralChatPanel() {
     return (
         <div className="flex flex-col h-full bg-gray-50">
             <Conversation className="flex-1">
-                <ConversationContent
-                    className={`py-6 px-4 sm:px-6 md:px-8 h-full ${
-                        showSuggestions ? "" : ""
-                    }`}
-                >
+                <ConversationContent className="py-6 px-4 sm:px-6 md:px-8 h-full">
                     <div className="max-w-3xl w-full mx-auto">
                         <div className="space-y-4">
                             {messages.map((message, idx) => (
