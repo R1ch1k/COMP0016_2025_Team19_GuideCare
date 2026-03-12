@@ -25,6 +25,7 @@ import { Trash2, Sparkles } from "lucide-react";
 interface ChatMessage {
     role: "user" | "assistant";
     content: string;
+    isUiOnly?: boolean;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -39,6 +40,7 @@ const SUGGESTED_QUESTIONS = [
 const WELCOME_MESSAGE: ChatMessage = {
     role: "assistant",
     content: "Hello! I'm your general clinical assistant. Ask me anything — guidelines, drug queries, clinical reasoning, or medical concepts. I'm not tied to a specific patient or guideline here.",
+    isUiOnly: true,
 };
 
 export default function GeneralChatPanel() {
@@ -72,9 +74,9 @@ export default function GeneralChatPanel() {
         abortControllerRef.current = new AbortController();
 
         try {
-            // Exclude the static welcome message — it's UI only, not real history
+            // Exclude UI-only messages (e.g. the welcome message) from API history
             const apiMessages = updatedMessages
-                .filter((m) => !(m.role === "assistant" && m.content === WELCOME_MESSAGE.content))
+                .filter((m) => !m.isUiOnly)
                 .map((m) => ({ role: m.role, content: m.content }));
 
             const response = await fetch("/api/general-chat", {
@@ -123,7 +125,7 @@ export default function GeneralChatPanel() {
                 ...prev,
                 {
                     role: "assistant",
-                    content: `Sorry, I couldn't process that request. (${detail})`,
+                    content: "Sorry, I couldn't process that request. Please try again later.",
                 },
             ]);
             setStreamingMessage("");

@@ -38,13 +38,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'messages field is required' }, { status: 400 });
         }
 
+        // Validate messages: only allow user/assistant roles with string content
+        const sanitizedMessages = (messages as { role: string; content: unknown }[])
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .filter((m) => typeof m.content === 'string' && m.content.trim().length > 0)
+            .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content as string }));
+
         const openai = getOpenAIClient();
 
         const stream = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL || 'gpt-4o-2024-08-06',
+            model: process.env.OPENAI_MODEL || 'gpt-4o',
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
-                ...messages,
+                ...sanitizedMessages,
             ],
             stream: true,
         });
