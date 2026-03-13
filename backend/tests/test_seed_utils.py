@@ -32,7 +32,9 @@ class TestCalculateAge:
         from app.seed import calculate_age
         dob = datetime.date(2000, 6, 15)
         age = calculate_age(dob)
-        assert 20 <= age <= 30  # Sanity range for 2024/2025
+        today = datetime.date.today()
+        expected = today.year - 2000 - ((today.month, today.day) < (6, 15))
+        assert age == expected
 
     def test_returns_integer(self):
         from app.seed import calculate_age

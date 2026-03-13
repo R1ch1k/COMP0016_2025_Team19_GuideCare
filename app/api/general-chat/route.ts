@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         const openai = getOpenAIClient();
 
         const stream = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL || 'gpt-4o',
+            model: process.env.OPENAI_MODEL || 'gpt-4o-2024-08-06',
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
                 ...sanitizedMessages,
