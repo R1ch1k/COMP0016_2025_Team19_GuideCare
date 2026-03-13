@@ -380,15 +380,15 @@ guide-care/
 │   │       └── ws_manager.py   # WebSocket manager + diagnosis auto-persist
 │   ├── tests/                  # Backend test suite (320 tests, 86% coverage)
 │   │   ├── conftest.py             # Fixtures: in-memory SQLite, async client
-│   │   ├── test_guideline_engine.py # 79 unit tests for engine functions
+│   │   ├── test_guideline_engine.py # 77 unit tests for engine functions
 │   │   ├── test_pipeline_e2e.py    # 35 E2E tests across all 10 guidelines
 │   │   ├── test_api.py            # 24 HTTP endpoint integration tests
-│   │   ├── test_orchestration.py  # 8 LangGraph pipeline tests (mocked LLM)
+│   │   ├── test_orchestration.py  # 9 LangGraph pipeline tests (mocked LLM)
 │   │   ├── test_crud.py          # 15 database CRUD tests
-│   │   ├── test_llm.py           # 17 unit tests for LLM routing (mocked OpenAI)
-│   │   ├── test_ws_manager.py    # 45 unit tests for WebSocket manager (mocked)
-│   │   ├── test_deps.py          # 80 unit tests for orchestration deps (mocked LLM)
-│   │   ├── test_seed_utils.py    # 10 unit tests for seed helpers and retry/timeout
+│   │   ├── test_llm.py           # 19 unit tests for LLM routing (mocked OpenAI)
+│   │   ├── test_ws_manager.py    # 39 unit tests for WebSocket manager (mocked)
+│   │   ├── test_deps.py          # 89 unit tests for orchestration deps (mocked LLM)
+│   │   ├── test_seed_utils.py    # 12 unit tests for seed helpers and retry/timeout
 │   │   └── test_patients.py      # 1 legacy patient test
 │   ├── langgraph.json          # LangGraph Studio config
 │   ├── Dockerfile
@@ -424,15 +424,15 @@ The backend test suite (`backend/tests/`) includes:
 
 | File | Tests | What is covered |
 |------|-------|-----------------|
-| `test_guideline_engine.py` | 79 | All 19 pure functions: parse_bp, evaluate_condition, traverse_graph, format_recommendation, fix_variable_extraction, etc. |
+| `test_guideline_engine.py` | 77 | All 19 pure functions: parse_bp, evaluate_condition, traverse_graph, format_recommendation, fix_variable_extraction, etc. |
 | `test_pipeline_e2e.py` | 35 | All 10 NICE guidelines (11 scenarios): graph traversal, recommendation content, no double periods |
 | `test_api.py` | 24 | HTTP endpoints: patients CRUD, PATCH, CSV import, conversations, diagnoses list/get/export with real data |
-| `test_orchestration.py` | 8 | LangGraph pipeline with mocked LLM: triage routing, clarification, variable extraction, full pipeline |
+| `test_orchestration.py` | 9 | LangGraph pipeline with mocked LLM: triage routing, clarification, variable extraction, full pipeline |
 | `test_crud.py` | 15 | Database CRUD: compute_age, patient/conversation/message operations, update_patient, get_patient_diagnoses |
-| `test_llm.py` | 17 | LLM routing: `generate()`, `_generate_api()`, `_generate_local()`, `generate_api_only()` — all with mocked OpenAI client |
-| `test_ws_manager.py` | 45 | WebSocket lifecycle, diagnosis auto-persist, patient vitals update, followup mode, orchestration failure paths |
-| `test_deps.py` | 80 | `triage_agent`, `gpt_clarifier`, `select_guideline_fn`, `extract_variables_20b` — all with pre-baked mocked LLM responses |
-| `test_seed_utils.py` | 10 | `calculate_age`, `seed_if_empty`, `with_retry_timeout`, `log_step` |
+| `test_llm.py` | 19 | LLM routing: `generate()`, `_generate_api()`, `_generate_local()`, `generate_api_only()` — all with mocked OpenAI client |
+| `test_ws_manager.py` | 39 | WebSocket lifecycle, diagnosis auto-persist, patient vitals update, followup mode, orchestration failure paths |
+| `test_deps.py` | 89 | `triage_agent`, `gpt_clarifier`, `select_guideline_fn`, `extract_variables_20b` — all with pre-baked mocked LLM responses |
+| `test_seed_utils.py` | 12 | `calculate_age`, `seed_if_empty`, `with_retry_timeout`, `log_step` |
 | `test_patients.py` | 1 | Legacy patient CRUD test |
 
 All LLM-dependent tests use `unittest.mock.AsyncMock` and `patch` to inject pre-baked JSON responses — no live API key required to run the test suite.
