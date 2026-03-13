@@ -510,3 +510,173 @@ class TestGetLatestRecommendation:
         with patch("app.ws_manager.AsyncSessionLocal", mock_sl):
             result = await mgr._get_latest_recommendation(uuid.uuid4())
         assert result is None
+
+
+# ── Additional edge cases ──────────────────────────────────────────────────────
+
+class TestUpdatePatientFromDiagnosisEdgeCases:
+    @pytest.mark.asyncio
+    async def test_updates_abpm_daytime_vitals(self):
+        mgr = ConnectionManager()
+        patient = _make_patient()
+        mock_db, _ = _db_mock(patient=patient)
+        mock_db.get = AsyncMock(return_value=patient)
+
+        event = {
+            "selected_guideline": "NG136",
+            "final_recommendation": "Rec",
+            "extracted_variables": {"abpm_daytime": "145/90"},
+        }
+        await mgr._update_patient_from_diagnosis(mock_db, patient.id, event)
+        assert patient.recent_vitals.get("abpm_daytime") == "145/90"
+
+    @pytest.mark.asyncio
+    async def test_updates_hbpm_vitals(self):
+        mgr = ConnectionManager()
+        patient = _make_patient()
+        mock_db, _ = _db_mock(patient=patient)
+        mock_db.get = AsyncMock(return_value=patient)
+
+        event = {
+            "selected_guideline": "NG136",
+            "final_recommendation": "Rec",
+            "extracted_variables": {"hbpm_average": "148/92"},
+        }
+        await mgr._update_patient_from_diagnosis(mock_db, patient.id, event)
+        assert patient.recent_vitals.get("hbpm_average") == "148/92"
+
+    @pytest.mark.asyncio
+    async def test_updates_temperature_vitals(self):
+        mgr = ConnectionManager()
+        patient = _make_patient()
+        mock_db, _ = _db_mock(patient=patient)
+        mock_db.get = AsyncMock(return_value=patient)
+
+        event = {
+            "selected_guideline": "NG84",
+            "final_recommendation": "Rec",
+            "extracted_variables": {"temperature": 38.5},
+        }
+        await mgr._update_patient_from_diagnosis(mock_db, patient.id, event)
+        assert patient.recent_vitals.get("temperature") == 38.5
+
+    @pytest.mark.asyncio
+    async def test_urgent_escalation_sets_urgency(self):
+        mgr = ConnectionManager()
+        patient = _make_patient()
+        mock_db, _ = _db_mock(patient=patient)
+        mock_db.get = AsyncMock(return_value=patient)
+
+        event = {
+            "selected_guideline": "NG136",
+            "final_recommendation": "Emergency",
+            "extracted_variables": {},
+            "urgent_escalation": True,
+        }
+        await mgr._update_patient_from_diagnosis(mock_db, patient.id, event)
+        assert patient.clinical_notes[0]["urgency"] == "urgent"
+
+    @pytest.mark.asyncio
+    async def test_does_not_duplicate_condition(self):
+        mgr = ConnectionManager()
+        patient = _make_patient()
+        patient.conditions = ["Hypertension"]  # Already has the condition
+        mock_db, _ = _db_mock(patient=patient)
+        mock_db.get = AsyncMock(return_value=patient)
+
+        event = {
+            "selected_guideline": "NG136",
+            "final_recommendation": "Continue treatment",
+            "extracted_variables": {},
+        }
+        await mgr._update_patient_from_diagnosis(mock_db, patient.id, event)
+        assert patient.conditions.count("Hypertension") == 1
+
+
+class TestHandleIncomingMessageEdgeCases:
+    @pytest.mark.asyncio
+    async def test_db_general_error_broadcasts_error(self):
+        """Non-IntegrityError DB failure should also broadcast an error."""
+        mgr = ConnectionManager()
+        mgr.set_orchestrator(MagicMock())
+        pid = str(uuid.uuid4())
+        ws = _make_ws()
+        await mgr.connect(pid, ws)
+
+        conv = _make_conv()
+        mock_db, mock_sl = _db_mock(conv=conv)
+        mock_db.commit.side_effect = Exception("DB connection lost")
+
+        with patch("app.ws_manager.AsyncSessionLocal", mock_sl):
+            await mgr.handle_incoming_message(pid, {"role": "user", "content": "hi"})
+
+        error_calls = [c.args[0] for c in ws.send_json.await_args_list if c.args[0].get("type") == "error"]
+        assert error_calls
+
+    @pytest.mark.asyncio
+    async def test_followup_llm_failure_returns_fallback(self):
+        """If _answer_followup raises, a fallback message is sent."""
+        mgr = ConnectionManager()
+        mgr.set_orchestrator(MagicMock())
+        pid = str(uuid.uuid4())
+        ws = _make_ws()
+        await mgr.connect(pid, ws)
+
+        conv = _make_conv()
+        mock_db, mock_sl = _db_mock(conv=conv)
+        mock_db.get = AsyncMock(return_value=conv)
+
+        with patch("app.ws_manager.AsyncSessionLocal", mock_sl), \
+             patch.object(mgr, "_get_latest_recommendation", new_callable=AsyncMock) as mock_rec, \
+             patch.object(mgr, "_answer_followup", new_callable=AsyncMock) as mock_ans:
+            mock_rec.return_value = "Prior recommendation."
+            mock_ans.side_effect = Exception("LLM down")
+
+            await mgr.handle_incoming_message(
+                pid,
+                {"role": "user", "content": "Follow up?", "meta": {"followup": True}},
+            )
+
+        # Should still broadcast a followup message (fallback text)
+        calls = [c.args[0] for c in ws.send_json.await_args_list]
+        followup_calls = [c for c in calls if c.get("type") == "assistant_event"]
+        assert followup_calls
+
+    @pytest.mark.asyncio
+    async def test_followup_no_prior_recommendation_skips_to_pipeline(self):
+        """If no prior recommendation exists, followup falls through to orchestration."""
+        mgr = ConnectionManager()
+        mgr.set_orchestrator(MagicMock())
+        pid = str(uuid.uuid4())
+        ws = _make_ws()
+        await mgr.connect(pid, ws)
+
+        conv = _make_conv()
+        mock_db, mock_sl = _db_mock(conv=conv)
+        mock_db.get = AsyncMock(return_value=conv)
+
+        orch_event = {"type": "assistant_event", "content": "Pipeline answer.", "meta": {}}
+
+        with patch("app.ws_manager.AsyncSessionLocal", mock_sl), \
+             patch.object(mgr, "_get_latest_recommendation", new_callable=AsyncMock) as mock_rec, \
+             patch("app.ws_manager.process_user_turn", new_callable=AsyncMock) as mock_orch:
+            mock_rec.return_value = None  # No prior recommendation
+            mock_orch.return_value = orch_event
+
+            await mgr.handle_incoming_message(
+                pid,
+                {"role": "user", "content": "question", "meta": {"followup": True}},
+            )
+
+        # Should have called orchestration since no prior rec
+        mock_orch.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_close_current_conversation_no_existing(self):
+        """_close_current_conversation should be a no-op when no conversation exists."""
+        mock_db, mock_sl = _db_mock(conv=None)
+
+        mgr = ConnectionManager()
+        with patch("app.ws_manager.AsyncSessionLocal", mock_sl):
+            # Should not raise
+            await mgr._close_current_conversation(uuid.uuid4())
